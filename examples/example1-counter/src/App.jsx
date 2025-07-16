@@ -1,11 +1,11 @@
-import { Component } from "@framework/component";
+import { WebMVCComponent } from "web-mvc-js";
 import { CounterDisplay } from "./CounterDisplay";
 import { CounterButton } from "./CounterButton";
-import { CounterProxyModel } from "./CounterProxyModel";
+import { CounterModel } from "./CounterModel";
 
-export class App extends Component {
+export class App extends WebMVCComponent {
   constructor() {
-    const model = new CounterProxyModel();
+    const model = new CounterModel();
     super({ model });
     this.model = model;
   }

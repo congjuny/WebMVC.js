@@ -1,6 +1,6 @@
-import { Component } from '@framework/component';
+import { WebMVCComponent } from "web-mvc-js";
 
-export class CounterButton extends Component {
+export class CounterButton extends WebMVCComponent {
   constructor(props) {
     super(props);
     this.label = props.label;

@@ -1,18 +1,15 @@
+import { WebMVCModel } from "web-mvc-js";
 
-import { Model } from '@framework/model';
-
-export class CounterModel extends Model {
+export class CounterModel extends WebMVCModel {
   count = 0;
 
   increment() {
     this.count++;
-    console.log("Incremented to", this.count);
-    this.notify();
+    console.log("CounterProxyModel Incremented to", this.count);
   }
 
   decrement() {
     this.count--;
-    console.log("Decremented to", this.count);
-    this.notify();
+    console.log("CounterProxyModel Decremented to", this.count);
   }
 }

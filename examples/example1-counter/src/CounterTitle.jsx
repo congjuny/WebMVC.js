@@ -1,6 +1,6 @@
-import { Component } from '@framework/component';
+import { WebMVCComponent } from "web-mvc-js";
 
-export class CounterTitle extends Component {
+export class CounterTitle extends WebMVCComponent {
   constructor() {
     super();
     console.log("CounterTitle created", this);
@@ -12,6 +12,6 @@ export class CounterTitle extends Component {
       <div>
         <h1 style="text-align: center;">Counter Title</h1>
       </div>
-    )
+    );
   }
 }
