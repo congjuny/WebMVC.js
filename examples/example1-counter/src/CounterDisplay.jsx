@@ -13,8 +13,7 @@ export class CounterDisplay extends WebMVCComponent {
     return (
       <div>
         <CounterTitle />
-        <h1>Counter Display</h1>
-        <p>This component displays the current count value.</p>
+        <p>A 'Hello, World!' app with the WebMVC.js framework</p>
         <h2>Count: {this.model?.count}</h2>
       </div>
     );

@@ -1,5 +1,4 @@
 import { defineConfig } from "vite";
-import path from "path";
 
 export default defineConfig({
   esbuild: {
@@ -10,9 +9,5 @@ export default defineConfig({
     // Uncomment the line below if you want to use the automatic import feature
     //jsxImportSource: 'framework/jsx-runtime', // ✅ your shim
   },
-  resolve: {
-    alias: {
-      "@framework": path.resolve(__dirname, "./framework"),
-    },
-  },
+  resolve: {},
 });
