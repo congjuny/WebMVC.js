@@ -1,9 +1,7 @@
 export function h(type, props, ...children) {
-  return {
-    type,
-    props: props || {},
-    children: children.flat(),
-  };
+  console.log("h() called with type:", type, "props:", props, "children:", children);
+
+  return { type, props: props || {}, children: children.flat() };
 }
 
 export function createElement(vnode, parentEl = null) {

@@ -1,6 +1,6 @@
 export class WebMVCModel {
   constructor() {
-    this._listeners = new Set();
+    this._listeners = new Map();
     this._bindings = new Map();
 
     // Return a proxy to intercept property access
@@ -26,21 +26,132 @@ export class WebMVCModel {
     });
   }
 
-  /**
-   * Add a change listener callback
-   * @param {Function} callback - Function called when any property changes
-   */
-  addListener(callback) {
-    this._listeners.add(callback);
+  // Add a listener for property changes
+  addListener(property, callback) {
+    // If only one argument is provided, it's a global listener
+    if (typeof property === "function") {
+      callback = property;
+      property = "*"; // Use '*' as key for global listeners
+    }
+
+    if (!this._listeners.has(property)) {
+      this._listeners.set(property, []);
+    }
+
+    this._listeners.get(property).push(callback);
+
+    return this; // Enable chaining
+  }
+
+  // Remove a listener for property changes
+  removeListener(property, callback) {
+    // If only one argument is provided, it's a global listener
+    if (typeof property === "function") {
+      callback = property;
+      property = "*"; // Use '*' as key for global listeners
+    }
+
+    if (!this._listeners || !this._listeners.has(property)) {
+      return this;
+    }
+
+    const listeners = this._listeners.get(property);
+    const index = listeners.indexOf(callback);
+    if (index > -1) {
+      listeners.splice(index, 1);
+    }
+
+    // Clean up empty arrays
+    if (listeners.length === 0) {
+      this._listeners.delete(property);
+    }
+
+    return this;
+  }
+
+  // Remove all listeners for a property
+  removeAllListeners(property) {
+    if (!this._listeners) return this;
+
+    if (property) {
+      this._listeners.delete(property);
+    } else {
+      this._listeners.clear();
+    }
+
+    return this;
+  }
+
+  // Clean up all bindings
+  destroy() {
+    this._bindings.forEach((listener, element) => {
+      element.removeEventListener(this._getDefaultEvent(element), listener);
+    });
+    this._bindings.clear();
+
+    if (this._listeners) {
+      this._listeners.clear();
+    }
   }
 
   /**
-   * Remove a change listener callback
-   * @param {Function} callback - The callback to remove
+   * Notify all listeners of a property change
+   * @private
    */
-  removeListener(callback) {
-    this._listeners.delete(callback);
+  _notifyListeners(property, newValue, oldValue) {
+    // Call onChange method if it exists
+    if (this.onChange) {
+      this.onChange(property, newValue, oldValue);
+    }
+
+    // Call registered listeners
+    if (
+      this._listeners &&
+      (this._listeners.has(property) || this._listeners.has("*"))
+    ) {
+      const l1 = this._listeners.get("*"); // Global listeners
+      const l2 = this._listeners.get(property); // Specific property listeners
+      const allListeners = [...(l1 || []), ...(l2 || [])];
+
+      // Notify all registered listeners
+      allListeners.forEach((callback) => {
+        try {
+          callback(property, newValue, oldValue);
+        } catch (error) {
+          console.error(`Error notifying listener for ${property}:`, error);
+        }
+      });
+    }
   }
+
+  /**
+   * Get the current state as a plain object
+   */
+  toJSON() {
+    const result = {};
+    for (const key in this) {
+      if (!key.startsWith("_") && typeof this[key] !== "function") {
+        result[key] = this[key];
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Update multiple properties at once
+   * @param {Object} data - Object containing property-value pairs
+   */
+  update(data) {
+    Object.keys(data).forEach((key) => {
+      this[key] = data[key];
+    });
+
+    return this;
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * Bind a property to a DOM element for two-way data binding
@@ -146,16 +257,6 @@ export class WebMVCModel {
   }
 
   /**
-   * Notify all listeners of a property change
-   * @private
-   */
-  _notifyListeners(property, newValue, oldValue) {
-    this._listeners.forEach((callback) => {
-      callback(property, newValue, oldValue);
-    });
-  }
-
-  /**
    * Update bound DOM elements when a property changes
    * @private
    */
@@ -210,30 +311,5 @@ export class WebMVCModel {
       const element = renderItem(item, index);
       container.appendChild(element);
     });
-  }
-
-  /**
-   * Get the current state as a plain object
-   */
-  toJSON() {
-    const result = {};
-    for (const key in this) {
-      if (!key.startsWith("_") && typeof this[key] !== "function") {
-        result[key] = this[key];
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Update multiple properties at once
-   * @param {Object} data - Object containing property-value pairs
-   */
-  update(data) {
-    Object.keys(data).forEach((key) => {
-      this[key] = data[key];
-    });
-
-    return this;
   }
 }
