@@ -1,7 +1,7 @@
-export function h(type, props, ...children) {
-  console.log("h() called with type:", type, "props:", props, "children:", children);
+export function h(tag, props, ...children) {
+  //console.log("h() called with tag:", tag, "props:", props, "children:", children);
 
-  return { type, props: props || {}, children: children.flat() };
+  return { tag, props: props || {}, children: children.flat() };
 }
 
 export function createElement(vnode, parentEl = null) {
@@ -12,9 +12,9 @@ export function createElement(vnode, parentEl = null) {
     return document.createTextNode(String(vnode));
   }
 
-  const { type, props, children } = vnode;
+  const { tag, props, children } = vnode;
 
-  if (type === Fragment) {
+  if (tag === Fragment) {
     const frag = document.createDocumentFragment();
     for (const child of children) {
       const node = createElement(child, frag);
@@ -23,20 +23,46 @@ export function createElement(vnode, parentEl = null) {
     return frag;
   }
 
-  if (typeof type === "function") {
-    const instance = new type(props);
-    return instance.createDom(parentEl);
+  if (typeof tag === "function") {
+    const instance = new tag(props);
+
+    // Track parent-child relationship
+    if (h.currentComponent) {
+      if (!h.currentComponent.childComponents) {
+        h.currentComponent.childComponents = [];
+      }
+      h.currentComponent.childComponents.push(instance);
+      instance.parent = h.currentComponent;
+    }
+
+    // Set component as current and render
+    const previousComponent = h.currentComponent;
+    h.currentComponent = instance;
+
+    const dom = instance.createDom(parentEl);
+
+    h.currentComponent = previousComponent;
+
+    return dom;
   }
 
-  const el = document.createElement(type);
+  const el = document.createElement(tag);
 
-  for (const [key, value] of Object.entries(props || {})) {
-    if (key.startsWith("on") && typeof value === "function") {
-      const eventName = key.slice(2).toLowerCase();
-      el.addEventListener(eventName, value);
-    } else if (value != null) {
-      el.setAttribute(key, value);
-    }
+  if (props) {
+    Object.entries(props).forEach(([key, value]) => {
+      if (key === "ref") {
+        if (typeof value === "string" && h.currentComponent) {
+          // store ref in the current component
+          h.currentComponent.refs[value] = el;
+          console.log(`Stored ref ${value} in ${h.currentComponent.constructor.name}`);
+        }
+      } else if (key.startsWith("on") && typeof value === "function") {
+        const eventName = key.slice(2).toLowerCase();
+        el.addEventListener(eventName, value);
+      } else if (value !== null && value !== undefined) {
+        el.setAttribute(key, value);
+      }
+    });
   }
 
   for (const child of children) {
