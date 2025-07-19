@@ -1,10 +1,14 @@
 import { WebMVCComponent } from "web-mvc-js";
 
 export class CounterDisplay extends WebMVCComponent {
-  constructor({ model }) {
-    super(model); // optional if your base class uses model
-    this.model = model;
+  constructor(props) {
+    super(props); // optional if your base class uses model
+    this.model = props?.model;
     console.log("CounterDisplay created", this);
+
+    if (this.model?.addListener) {
+      this.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+    }
   }
 
   render() {

@@ -19,7 +19,12 @@ export class App extends WebMVCComponent {
         <div class="demo-section">
           <h2>Counter Section</h2>
           <CounterDisplay model={this.model} />
-          <CounterInputField label="Count Input Value:" onInput={(newValue) => this.model.setCount(newValue)} />
+          <CounterInputField
+            refName="counterInput"
+            label="Count Input Value:"
+            model={this.model}
+            onInput={(newValue) => this.model.setCount(newValue)}
+          />
           <CounterButton label="Increment" onClick={() => this.model.increment()} />
           <CounterButton label="Decrement" onClick={() => this.model.decrement()} />
           <CounterButton label="Reset" onClick={() => this.model.reset()} />

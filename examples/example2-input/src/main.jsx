@@ -5,4 +5,6 @@ app.mount(document.body);
 
 console.log("App mounted. Model count:", app.model.count);
 
-//console.log("app mounted. counter input ref:", app.getRef("counterInput"));
+const input = app.getRef("counterInput");
+
+console.log("app mounted. counter input ref:", input);
