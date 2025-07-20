@@ -60,11 +60,11 @@ export class App extends WebMVCComponent {
 
     try {
       if (property === "count") {
-        this.refs.counterInput.value = Number(newValue); // Update input value directly
+        this.childComponents["counter-input"].refs.counterInput.value = Number(newValue); // Update input value directly
       } else if (property === "name") {
-        this.refs.nameInput.value = newValue; // Update name input value directly
+        this.childComponents["name-input"].refs.nameInput.value = newValue; // Update name input value directly
       } else if (property === "email") {
-        this.refs.emailInput.value = newValue; // Update email input value directly
+        this.childComponents["email-input"].refs.emailInput.value = newValue; // Update email input value directly
       } else if (property === "age") {
         this.refs.ageInput.value = newValue; // Update age input value directly
       } else if (property === "isActive") {
@@ -100,10 +100,10 @@ export class App extends WebMVCComponent {
             model={this.model}
             onInput={(newValue) => this.model.setCount(newValue)}
           />
-          <CounterButton label="Increment" onClick={() => this.model.increment()} />
-          <CounterButton label="Decrement" onClick={() => this.model.decrement()} />
-          <CounterButton label="Reset" onClick={() => this.model.reset()} />
-          <CounterButton label="Random" onClick={() => this.model.random()} />
+          <CounterButton label="Increment" id="increment-button" onClick={() => this.model.increment()} />
+          <CounterButton label="Decrement" id="decrement-button" onClick={() => this.model.decrement()} />
+          <CounterButton label="Reset" id="reset-button" onClick={() => this.model.reset()} />
+          <CounterButton label="Random" id="random-button" onClick={() => this.model.random()} />
         </div>
         <div class="demo-section">
           <CounterInputField

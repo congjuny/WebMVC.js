@@ -15,7 +15,7 @@ export class CounterDisplay extends WebMVCComponent {
     console.log("CounterDisplay.update() called, newValue =", newValue, "oldValue =", oldValue);
 
     // either directly update the element or call base update to re-create the DOM
-    //this.refs.counterDisplay.textContent = `Count: ${this.model?.count || 0}`;
+    // this.refs.counterDisplay.textContent = `Count: ${this.model?.count || 0}`;
     super.update(property, newValue, oldValue);
 
     // You can add any specific update logic here if needed
