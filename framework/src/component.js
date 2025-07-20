@@ -58,7 +58,7 @@ export class WebMVCComponent {
     container.replaceChildren(dom);
 
     // Collect all refs after mounting
-    this.allRefs = this.collectAllRefs();
+    this.refs = this.collectAllRefs();
 
     // Call afterMount on all components
     this.callAfterMount();
@@ -108,7 +108,8 @@ export class WebMVCComponent {
   }
 
   getRef(refName) {
-    const ref = this.allRefs?.[refName] || this.refs[refName];
+    //const ref = this.allRefs?.[refName] || this.refs[refName];
+    const ref = this.refs[refName];
     console.log("🔍 getRef(" + refName + "):", ref ? "found" : "not found");
     return ref;
   }
