@@ -6,23 +6,24 @@ export class WebMVCComponent {
   constructor(props = {}) {
     this.props = props;
     this.model = props.model;
-    this.childComponents = [];
-    this.refs = {};
+    this.childComponents = null; // Track child components
+    this.refs = {}; // references to child DOM elements
+    this.element = null; // Track own root DOM element
+    this.parentElement = null; // parent element
   }
 
   // Render method - to be overridden by subclasses
-  // Should return JSX directly (not wrapped in renderWithRefs)
   render() {
     throw new Error("render() method must be implemented");
   }
 
-  createDom(parentEl) {
+  createDom(argParentElement) {
     const vdom = this.render(); // Virtual DOM node from JSX -> h() -> actual element
     console.log(`${this.constructor.name} createDom() vdom:`, vdom);
 
-    const dom = createElement(vdom, parentEl);
-    this.el = dom; // Track own root DOM element
-    this.parentEl = parentEl;
+    const dom = createElement(vdom, argParentElement);
+    this.element = dom; // Track own root DOM element
+    this.parentElement = argParentElement;
 
     console.log(`${this.constructor.name} createDom():`, dom.outerHTML);
 
@@ -58,12 +59,12 @@ export class WebMVCComponent {
     container.replaceChildren(dom);
 
     // Collect all refs after mounting
-    this.refs = this.collectAllRefs();
+    // this.refs = this.collectAllRefs();
 
     // Call afterMount on all components
     this.callAfterMount();
 
-    console.log(`${this.constructor.name} mount() el=`, this.el);
+    console.log(`${this.constructor.name} mount() element=`, this.element);
     return this;
   }
 
@@ -79,8 +80,8 @@ export class WebMVCComponent {
       globalRefRegistry.delete(this.componentId);
     }
 
-    if (this.el && this.el.parentNode) {
-      this.el.parentNode.removeChild(this.el);
+    if (this.element && this.element.parentNode) {
+      this.element.parentNode.removeChild(this.element);
     }
   }
 
@@ -89,31 +90,31 @@ export class WebMVCComponent {
   update(property, newValue, oldValue) {
     console.log(`${this.constructor.name} update() called - ${property}, new: ${newValue}, old: ${oldValue}`);
 
-    if (!this.el || !this.parentEl) {
+    if (!this.element || !this.parentElement) {
       return;
     }
-    console.log(`${this.constructor.name} update() el:`, this.el.outerHTML);
+    console.log(`${this.constructor.name} update() element:`, this.element.outerHTML);
 
-    const oldEl = this.el;
+    const oldEl = this.element;
 
     // Set up ref context and component tracking
     h.currentComponent = this;
     h.currentRefContext = this.refs;
 
-    const dom = this.createDom(this.parentEl);
+    const dom = this.createDom(this.parentElement);
 
     h.currentComponent = null;
 
-    this.parentEl.replaceChild(dom, oldEl);
+    this.parentElement.replaceChild(dom, oldEl);
 
     // Collect all refs after mounting
-    this.refs = this.collectAllRefs();
+    // this.refs = this.collectAllRefs();
 
     /*
-    console.log(`${this.constructor.name} update() updated dom=`, this.el.outerHTML);
+    console.log(`${this.constructor.name} update() updated dom=`, this.element.outerHTML);
 
-    if (this.el.parentNode) {
-      console.log("Parent node with updated child:", this.el.parentNode.innerHTML);
+    if (this.element.parentNode) {
+      console.log("Parent node with updated child:", this.element.parentNode.innerHTML);
     }
     */
   }

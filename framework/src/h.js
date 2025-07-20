@@ -4,7 +4,7 @@ export function h(tag, props, ...children) {
   return { tag, props: props || {}, children: children.flat() };
 }
 
-export function createElement(vnode, parentEl = null) {
+export function createElement(vnode, parentElement = null) {
   if (vnode == null || vnode === false) return null;
 
   // Text nodes (string or number)
@@ -31,7 +31,11 @@ export function createElement(vnode, parentEl = null) {
       if (!h.currentComponent.childComponents) {
         h.currentComponent.childComponents = [];
       }
-      h.currentComponent.childComponents.push(instance);
+      //h.currentComponent.childComponents.push(instance);
+      if (props.id) {
+        h.currentComponent.childComponents[props.id] = instance;
+      }
+
       instance.parent = h.currentComponent;
     }
 
@@ -39,7 +43,7 @@ export function createElement(vnode, parentEl = null) {
     const previousComponent = h.currentComponent;
     h.currentComponent = instance;
 
-    const dom = instance.createDom(parentEl);
+    const dom = instance.createDom(parentElement);
 
     h.currentComponent = previousComponent;
 
