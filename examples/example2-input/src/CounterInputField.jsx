@@ -3,42 +3,33 @@ import { WebMVCComponent } from "web-mvc-js";
 export class CounterInputField extends WebMVCComponent {
   constructor(props) {
     super(props);
-    this.label = props.label;
-    this.model = props.model;
-    this.refName = props.refName || "counterInput"; // Define a ref name for the input
-    this.handler = props.onInput;
+    this.props = props || {};
 
-    if (this.model?.addListener) {
-      this.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+    if (this.props.model?.addListener) {
+      this.props.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
     }
     console.log("CounterInputField created", this);
   }
 
   update(property, newValue, oldValue) {
     console.log("CounterInputField.update() called, newValue =", newValue, "oldValue =", oldValue);
-    //const input = this.getRef("counterInput");
-    const input = this.refs.counterInput; // Use refs to access the input element
-
-    if (input) {
-      input.value = newValue; // Update input value directly
-    }
   }
 
   afterMount() {
-    console.log(`this.refs.counterInput:`, this.refs.counterInput);
+    console.log(`${this.constructor.name}.afterMount this.refs:`, this.refs);
   }
 
   render() {
     console.log("CounterInputField.render() with count =", this.model?.count);
     return (
       <div class="form-group">
-        <label for="counter-input">{this.label}</label>
+        <label for={this.props.id || "counter-input"}>{this.props.label}</label>
         <input
-          type="number"
-          id="counter-input"
-          ref={this.refName}
-          value={this.model?.count}
-          onInput={(e) => this.handler(Number(e.target.value))}
+          type={this.props.type || "text"}
+          id={this.props.id || "counter-input"}
+          ref={this.props.refName}
+          value={this.props.value || ""}
+          onInput={(e) => this.props.onInput(e.target.value)}
         ></input>
       </div>
     );

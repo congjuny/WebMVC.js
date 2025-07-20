@@ -2,6 +2,9 @@ import { WebMVCModel } from "web-mvc-js";
 
 export class CounterModel extends WebMVCModel {
   count = 0;
+  name = "";
+  email = "";
+  isActive = true;
 
   increment() {
     this.count++;
@@ -26,5 +29,26 @@ export class CounterModel extends WebMVCModel {
   random() {
     this.count = Math.floor(Math.random() * 100);
     console.log("CounterProxyModel Randomized to", this.count);
+  }
+
+  setName(newName) {
+    this.name = newName;
+  }
+
+  setEmail(newEmail) {
+    this.email = newEmail;
+  }
+
+  setActive(isActive) {
+    this.isActive = isActive;
+  }
+
+  setAge(age) {
+    this.age = age;
+  }
+
+  validate() {
+    const isValid = this.name.length > 0 && this.email.includes("@");
+    return isValid;
   }
 }
