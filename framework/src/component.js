@@ -95,8 +95,19 @@ export class WebMVCComponent {
     console.log(`${this.constructor.name} update() el:`, this.el.outerHTML);
 
     const oldEl = this.el;
+
+    // Set up ref context and component tracking
+    h.currentComponent = this;
+    h.currentRefContext = this.refs;
+
     const dom = this.createDom(this.parentEl);
+
+    h.currentComponent = null;
+
     this.parentEl.replaceChild(dom, oldEl);
+
+    // Collect all refs after mounting
+    this.refs = this.collectAllRefs();
 
     /*
     console.log(`${this.constructor.name} update() updated dom=`, this.el.outerHTML);
