@@ -1,0 +1,30 @@
+{
+  "name": "create-web-mvc-app",
+  "version": "1.0.0",
+  "description": "Scaffold WebMVC.js applications with Vite",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "create-web-mvc-app": "./index.js"
+  },
+  "keywords": [
+    "WebMVC.js",
+    "vite",
+    "nodejs",
+    "scaffold",
+    "template",
+    "cli"
+  ],
+  "author": "Congjun Yang",
+  "license": "MIT",
+  "dependencies": {
+    "picocolors": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=14.18"
+  },
+  "files": [
+    "index.js",
+    "templates/**/*"
+  ]
+}
