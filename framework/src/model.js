@@ -105,10 +105,7 @@ export class WebMVCModel {
     }
 
     // Call registered listeners
-    if (
-      this._listeners &&
-      (this._listeners.has(property) || this._listeners.has("*"))
-    ) {
+    if (this._listeners && (this._listeners.has(property) || this._listeners.has("*"))) {
       const l1 = this._listeners.get("*"); // Global listeners
       const l2 = this._listeners.get(property); // Specific property listeners
       const allListeners = [...(l1 || []), ...(l2 || [])];
@@ -150,7 +147,9 @@ export class WebMVCModel {
   }
 
   /////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////                    //////////////////////////////////////
+  ///////////////////////////    NOT USED YET    //////////////////////////////////////
+  ///////////////////////////                    //////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////
 
   /**
@@ -225,15 +224,7 @@ export class WebMVCModel {
     });
 
     // Override array methods to trigger updates
-    const methodsToOverride = [
-      "push",
-      "pop",
-      "shift",
-      "unshift",
-      "splice",
-      "sort",
-      "reverse",
-    ];
+    const methodsToOverride = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse"];
     methodsToOverride.forEach((method) => {
       const originalMethod = arrayProxy[method];
       arrayProxy[method] = function (...args) {

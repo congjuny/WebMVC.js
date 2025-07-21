@@ -13,22 +13,11 @@ A modern JavaScript framework for building **single-page applications** with a c
 
 ## 🚀 Getting Started
 
-### **Test Locally**
+### 1. Clone this repo
 
-#### publish locally
 ```bash
-npm link
-```
-
-#### use the framework for example app
-```bash
+git clone https://github.com/congjuny/WebMVC.js.git
 cd WebMVC.js/examples/example1-counter
-npm link web-mvs-js
 npm install
 npm run dev
-```
-
-### **Publish to npm**
-```bash
-npm publish
 ```
