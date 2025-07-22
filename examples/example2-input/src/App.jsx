@@ -160,7 +160,7 @@ export class App extends WebMVCComponent {
 
           <div class="demo-section">
             <h2>Change Log</h2>
-            <button onclick="clearLog()">Clear Log</button>
+            <button onclick={() => this.clearLog()}>Clear Log</button>
             <div class="log" id="change-log" ref="logChange">
               <div>
                 <strong>Listeners Demo:</strong>
