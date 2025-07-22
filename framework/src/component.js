@@ -25,11 +25,12 @@ export class WebMVCComponent {
     this.element = dom; // Track own root DOM element
     this.parentElement = argParentElement;
 
-    console.log(`${this.constructor.name} createDom():`, dom.outerHTML);
+    //console.log(`${this.constructor.name} createDom() innerHTML:`, dom.innerHTML);
 
     return dom;
   }
 
+  /*
   collectAllRefs() {
     console.log("🔍 collectAllRefs() called for:", this.constructor.name);
     const allRefs = { ...this.refs };
@@ -44,6 +45,7 @@ export class WebMVCComponent {
     console.log("🏁 collectAllRefs() result for", this.constructor.name, ":", Object.keys(allRefs));
     return allRefs;
   }
+  */
 
   mount(container) {
     console.log("🚀 Mounting component:", this.constructor.name);
@@ -72,7 +74,9 @@ export class WebMVCComponent {
     if (typeof this.afterMount === "function") {
       this.afterMount();
     }
-    this.childComponents.forEach((child) => child.callAfterMount());
+    if (this.childComponents) {
+      this.childComponents.forEach((child) => child.callAfterMount());
+    }
   }
 
   unmount() {

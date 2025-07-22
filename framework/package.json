@@ -2,7 +2,7 @@
   "name": "web-mvc-js",
   "version": "1.0.0",
   "description": "A package for Web MVC framework",
-  "main": "src/index.js",
+  "main": "src/jsx-runtime.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
