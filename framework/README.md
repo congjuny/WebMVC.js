@@ -1,26 +1,17 @@
 # WebMVC.js
 
-A modern JavaScript framework for building **single-page applications** with a clean **Model–View–Controller** (MVC) architecture and **JSX-like syntax** — no virtual DOM diffing, just simplicity and speed.
-
-## ✨ Features
-
-- 🧩 **Component-based** UI architecture
-- 🧠 **Model-driven state management** (Observer-style)
-- ⚡ **JSX support** (via a lightweight `h()` function)
-- 🔁 **Automatic re-render on model changes**
-- 🧼 **Minimal runtime**, no dependencies
-- 🛠 Built with **Vite**
-
 ## 🚀 Getting Started
 
 ### **Test Locally**
 
 #### publish locally
+
 ```bash
 npm link
 ```
 
 #### use the framework for example app
+
 ```bash
 cd WebMVC.js/examples/example1-counter
 npm link web-mvs-js
@@ -29,6 +20,7 @@ npm run dev
 ```
 
 ### **Publish to npm**
+
 ```bash
 npm publish
 ```

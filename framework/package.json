@@ -1,7 +1,7 @@
 {
   "name": "web-mvc-js",
   "version": "1.0.0",
-  "description": "A package for Web MVC framework",
+  "description": "A package for the Web MVC framework",
   "main": "src/jsx-runtime.js",
   "type": "module",
   "scripts": {
