@@ -1,0 +1,10 @@
+<svg width="220" height="60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .heavy { font: bold 24px sans-serif; fill: #2c3e50; }
+    .light { font: 16px sans-serif; fill: #3498db; }
+    .tag { font: italic 14px monospace; fill: #7f8c8d; }
+  </style>
+  <text x="10" y="30" class="heavy">WebMVC</text>
+  <text x="115" y="30" class="light">.js</text>
+  <text x="10" y="50" class="tag">&lt;Component /&gt;</text>
+</svg>
