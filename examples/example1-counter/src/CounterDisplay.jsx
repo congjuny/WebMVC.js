@@ -7,7 +7,7 @@ export class CounterDisplay extends WebMVCComponent {
     this.model = props.model;
 
     if (this.model?.addListener) {
-      this.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+      this.model.addListener((changes, model) => this.update(changes, model));
     }
     console.log("CounterDisplay created", this);
   }
