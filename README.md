@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="images/WebMVC.svg" alt="WebMVC Logo" width="400" />
-</div>
+<img src="images/WebMVC.svg" alt="WebMVC Logo" width="400" />
 
 A modern JavaScript framework for building **single-page applications** with a clean **Model–View–Controller** (MVC) architecture. You define the application views with **JSX syntax** augmented with references to DOM elements and components. No virtual DOM, just simplicity and speed. No hooks to a global blackbox state machine. You define and control your data model and state - This is Web programming the way it should have been!
 
@@ -33,3 +31,7 @@ npm link web-mvc-js
 npm install
 npm run dev
 ```
+
+## ✨ Contributions
+
+How to help? Come out with examples that challenge the framework. We will make it harder and harder to do so 😃.

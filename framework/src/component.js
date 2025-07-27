@@ -1,3 +1,4 @@
+// Copyright (c) 2025 Congjun Yang
 // framework/component.js
 
 import { createElement, h } from "./h.js";
@@ -91,8 +92,8 @@ export class WebMVCComponent {
 
   // Update method called by the model listener
   // This is where the component should re-render based on model changes
-  update(property, newValue, oldValue) {
-    console.log(`${this.constructor.name} update() called - ${property}, new: ${newValue}, old: ${oldValue}`);
+  update(changes, model) {
+    console.log(`${this.constructor.name} update() called - ${changes}, model: ${model}`);
 
     if (!this.element || !this.parentElement) {
       return;

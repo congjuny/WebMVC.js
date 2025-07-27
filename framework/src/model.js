@@ -1,306 +1,662 @@
+// Copyright (c) 2025 Congjun Yang
+// framework/src/model.js
+
 export class WebMVCModel {
-  constructor() {
-    this._listeners = new Map();
-    this._bindings = new Map();
+  constructor(data = {}) {
+    // Internal properties (non-enumerable to avoid proxy traps)
+    Object.defineProperties(this, {
+      _listeners: { value: new Set(), writable: true },
+      _propertyListeners: { value: new Map(), writable: true }, // Map<string, Set<Function>>
+      _batchedChanges: { value: new Map(), writable: true },
+      _batchTimeout: { value: null, writable: true },
+      _batchDelay: { value: 0, writable: true }, // 0 = next tick, >0 = milliseconds
+      _isInBatch: { value: false, writable: true },
+      _path: { value: "", writable: true },
+    });
 
-    // Return a proxy to intercept property access
-    return new Proxy(this, {
-      set: (target, property, value) => {
-        const oldValue = target[property];
+    // Initialize with provided data
+    Object.assign(this, data);
 
-        // Set the new value
-        target[property] = value;
+    // Return proxied version
+    return this._createProxy(this);
+  }
 
-        // Only notify if the value actually changed
-        if (oldValue !== value) {
-          this._notifyListeners(property, value, oldValue);
-          this._updateBoundElements(property, value);
+  // Create proxy with change detection
+  _createProxy(target, path = "") {
+    return new Proxy(target, {
+      get(obj, prop) {
+        const value = obj[prop];
+
+        // Return methods and internal properties as-is
+        if (typeof value === "function" || typeof prop === "symbol" || prop.startsWith("_")) {
+          return value;
+        }
+
+        // Wrap objects and arrays in proxies for nested monitoring
+        if (value && typeof value === "object") {
+          const fullPath = path ? `${path}.${prop}` : prop;
+
+          if (Array.isArray(value)) {
+            return obj._createArrayProxy(value, fullPath);
+          } else if (value.constructor === Object) {
+            return obj._createProxy(value, fullPath);
+          }
+        }
+
+        return value;
+      },
+
+      set(obj, prop, newValue) {
+        // Skip internal properties
+        if (prop.startsWith("_")) {
+          obj[prop] = newValue;
+          return true;
+        }
+
+        const oldValue = obj[prop];
+        const fullPath = path ? `${path}.${prop}` : prop;
+
+        // Only proceed if value actually changed
+        if (oldValue !== newValue) {
+          obj[prop] = newValue;
+
+          // Record the change
+          obj._recordChange(fullPath, oldValue, newValue);
         }
 
         return true;
       },
 
-      get: (target, property) => {
-        return target[property];
+      deleteProperty(obj, prop) {
+        if (prop.startsWith("_")) {
+          delete obj[prop];
+          return true;
+        }
+
+        const oldValue = obj[prop];
+        const fullPath = path ? `${path}.${prop}` : prop;
+
+        if (oldValue !== undefined) {
+          delete obj[prop];
+          obj._recordChange(fullPath, oldValue, undefined);
+        }
+
+        return true;
       },
     });
   }
 
-  // Add a listener for property changes
-  addListener(property, callback) {
-    // If only one argument is provided, it's a global listener
-    if (typeof property === "function") {
-      callback = property;
-      property = "*"; // Use '*' as key for global listeners
-    }
+  // Create array proxy with enhanced array method monitoring
+  _createArrayProxy(array, path) {
+    const self = this;
 
-    if (!this._listeners.has(property)) {
-      this._listeners.set(property, []);
-    }
+    return new Proxy(array, {
+      get(arr, prop) {
+        // Handle array methods that modify the array
+        if (typeof arr[prop] === "function") {
+          const originalMethod = arr[prop];
 
-    this._listeners.get(property).push(callback);
+          // Methods that modify the array
+          if (["push", "pop", "shift", "unshift", "splice", "sort", "reverse"].includes(prop)) {
+            return function (...args) {
+              const oldArray = [...arr];
+              const result = originalMethod.apply(arr, args);
 
-    return this; // Enable chaining
-  }
+              // Record array change
+              self._recordChange(path, oldArray, [...arr]);
 
-  // Remove a listener for property changes
-  removeListener(property, callback) {
-    // If only one argument is provided, it's a global listener
-    if (typeof property === "function") {
-      callback = property;
-      property = "*"; // Use '*' as key for global listeners
-    }
-
-    if (!this._listeners || !this._listeners.has(property)) {
-      return this;
-    }
-
-    const listeners = this._listeners.get(property);
-    const index = listeners.indexOf(callback);
-    if (index > -1) {
-      listeners.splice(index, 1);
-    }
-
-    // Clean up empty arrays
-    if (listeners.length === 0) {
-      this._listeners.delete(property);
-    }
-
-    return this;
-  }
-
-  // Remove all listeners for a property
-  removeAllListeners(property) {
-    if (!this._listeners) return this;
-
-    if (property) {
-      this._listeners.delete(property);
-    } else {
-      this._listeners.clear();
-    }
-
-    return this;
-  }
-
-  // Clean up all bindings
-  destroy() {
-    this._bindings.forEach((listener, element) => {
-      element.removeEventListener(this._getDefaultEvent(element), listener);
-    });
-    this._bindings.clear();
-
-    if (this._listeners) {
-      this._listeners.clear();
-    }
-  }
-
-  /**
-   * Notify all listeners of a property change
-   * @private
-   */
-  _notifyListeners(property, newValue, oldValue) {
-    // Call onChange method if it exists
-    if (this.onChange) {
-      this.onChange(property, newValue, oldValue);
-    }
-
-    // Call registered listeners
-    if (this._listeners && (this._listeners.has(property) || this._listeners.has("*"))) {
-      const l1 = this._listeners.get("*"); // Global listeners
-      const l2 = this._listeners.get(property); // Specific property listeners
-      const allListeners = [...(l1 || []), ...(l2 || [])];
-
-      // Notify all registered listeners
-      allListeners.forEach((callback) => {
-        try {
-          callback(property, newValue, oldValue);
-        } catch (error) {
-          console.error(`Error notifying listener for ${property}:`, error);
+              return result;
+            };
+          }
         }
-      });
-    }
+
+        const value = arr[prop];
+
+        // Wrap nested objects/arrays
+        if (value && typeof value === "object") {
+          const fullPath = `${path}[${prop}]`;
+
+          if (Array.isArray(value)) {
+            return self._createArrayProxy(value, fullPath);
+          } else if (value.constructor === Object) {
+            return self._createProxy(value, fullPath);
+          }
+        }
+
+        return value;
+      },
+
+      set(arr, prop, newValue) {
+        // Handle array index assignments
+        if (!isNaN(prop)) {
+          const oldValue = arr[prop];
+          const fullPath = `${path}[${prop}]`;
+
+          if (oldValue !== newValue) {
+            arr[prop] = newValue;
+            self._recordChange(fullPath, oldValue, newValue);
+          }
+        } else {
+          arr[prop] = newValue;
+        }
+
+        return true;
+      },
+    });
   }
 
-  /**
-   * Get the current state as a plain object
-   */
-  toJSON() {
-    const result = {};
-    for (const key in this) {
-      if (!key.startsWith("_") && typeof this[key] !== "function") {
-        result[key] = this[key];
-      }
-    }
-    return result;
-  }
-
-  /**
-   * Update multiple properties at once
-   * @param {Object} data - Object containing property-value pairs
-   */
-  update(data) {
-    Object.keys(data).forEach((key) => {
-      this[key] = data[key];
+  // Record a change for batching
+  _recordChange(path, oldValue, newValue) {
+    this._batchedChanges.set(path, {
+      path,
+      oldValue,
+      newValue,
+      timestamp: Date.now(),
     });
 
-    return this;
+    this._scheduleBatchFlush();
   }
 
-  /////////////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////                    //////////////////////////////////////
-  ///////////////////////////    NOT USED YET    //////////////////////////////////////
-  ///////////////////////////                    //////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////
+  // Schedule batch processing
+  _scheduleBatchFlush() {
+    if (this._batchTimeout) return;
 
-  /**
-   * Bind a property to a DOM element for two-way data binding
-   * @param {string} property - The property name to bind
-   * @param {HTMLElement} element - The DOM element to bind to
-   * @param {string} eventType - The event type to listen for (default: 'input')
-   */
-  bindToElement(property, element, eventType = "input") {
-    // Store the binding
-    if (!this._bindings.has(property)) {
-      this._bindings.set(property, new Set());
-    }
-    this._bindings.get(property).add({ element, eventType });
+    const flushChanges = () => {
+      if (this._batchedChanges.size > 0) {
+        const changes = Array.from(this._batchedChanges.values());
+        this._batchedChanges.clear();
 
-    // Set initial value from model to element
-    this._updateElementValue(element, this[property]);
-
-    // Listen for changes from the element
-    const handler = (event) => {
-      const newValue = this._getElementValue(element);
-      this[property] = newValue;
+        this._isInBatch = true;
+        this._notifyListeners(changes);
+        this._isInBatch = false;
+      }
+      this._batchTimeout = null;
     };
 
-    element.addEventListener(eventType, handler);
-
-    // Store the handler for cleanup
-    element._bindingHandler = handler;
-
-    return this;
+    if (this._batchDelay === 0) {
+      // Use next tick for immediate batching
+      this._batchTimeout = setTimeout(flushChanges, 0);
+    } else {
+      // Use specified delay
+      this._batchTimeout = setTimeout(flushChanges, this._batchDelay);
+    }
   }
 
-  /**
-   * Unbind a property from a DOM element
-   * @param {string} property - The property name to unbind
-   * @param {HTMLElement} element - The DOM element to unbind from
-   */
-  unbindFromElement(property, element) {
-    const bindings = this._bindings.get(property);
-    if (bindings) {
-      const binding = Array.from(bindings).find((b) => b.element === element);
-      if (binding) {
-        bindings.delete(binding);
-        element.removeEventListener(binding.eventType, element._bindingHandler);
-        delete element._bindingHandler;
+  // Notify all listeners
+  _notifyListeners(changes) {
+    // Notify global listeners
+    this._listeners.forEach((listener) => {
+      try {
+        listener(changes, this);
+      } catch (error) {
+        console.error("Error in change listener:", error);
+      }
+    });
+
+    // Notify property-specific listeners
+    if (this._propertyListeners.size > 0) {
+      this._notifyPropertyListeners(changes);
+    }
+  }
+
+  // Notify property-specific listeners
+  _notifyPropertyListeners(changes) {
+    changes.forEach((change) => {
+      this._propertyListeners.forEach((listeners, pattern) => {
+        if (this._matchesPattern(change.path, pattern)) {
+          listeners.forEach((listener) => {
+            try {
+              listener(change, this);
+            } catch (error) {
+              console.error("Error in property listener:", error);
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // Check if a path matches a pattern (supports wildcards)
+  _matchesPattern(path, pattern) {
+    // Exact match
+    if (path === pattern) return true;
+
+    // Convert pattern to regex
+    // Support for wildcards: * (any chars), ** (any depth), ? (single char)
+    const regexPattern = pattern
+      .replace(/\./g, "\\.") // Escape dots
+      .replace(/\[/g, "\\[") // Escape brackets
+      .replace(/\]/g, "\\]") // Escape brackets
+      .replace(/\*\*/g, "___DOUBLE___") // Temporarily replace **
+      .replace(/\*/g, "[^.\\[\\]]*") // * matches any chars except separators
+      .replace(/___DOUBLE___/g, ".*") // ** matches everything including separators
+      .replace(/\?/g, "[^.\\[\\]]"); // ? matches single char except separators
+
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(path);
+  }
+
+  // Public API methods
+
+  // Add a change listener
+  addListener(callback) {
+    if (typeof callback !== "function") {
+      throw new Error("Listener must be a function");
+    }
+    this._listeners.add(callback);
+
+    // Return unsubscribe function
+    return () => this._listeners.delete(callback);
+  }
+
+  // Add a property-specific listener
+  // Supports wildcards: *, **, ?
+  // Examples: 'name', 'preferences.*', 'users[*].name', 'items.**.status'
+  addPropertyListener(propertyPattern, callback) {
+    if (typeof callback !== "function") {
+      throw new Error("Listener must be a function");
+    }
+
+    if (!this._propertyListeners.has(propertyPattern)) {
+      this._propertyListeners.set(propertyPattern, new Set());
+    }
+
+    this._propertyListeners.get(propertyPattern).add(callback);
+
+    // Return unsubscribe function
+    return () => {
+      const listeners = this._propertyListeners.get(propertyPattern);
+      if (listeners) {
+        listeners.delete(callback);
+        if (listeners.size === 0) {
+          this._propertyListeners.delete(propertyPattern);
+        }
+      }
+    };
+  }
+
+  // Remove a listener
+  removeListener(callback) {
+    return this._listeners.delete(callback);
+  }
+
+  // Remove a property listener
+  removePropertyListener(propertyPattern, callback) {
+    const listeners = this._propertyListeners.get(propertyPattern);
+    if (listeners) {
+      const removed = listeners.delete(callback);
+      if (listeners.size === 0) {
+        this._propertyListeners.delete(propertyPattern);
+      }
+      return removed;
+    }
+    return false;
+  }
+
+  // Remove all listeners for a property pattern
+  removeAllPropertyListeners(propertyPattern) {
+    return this._propertyListeners.delete(propertyPattern);
+  }
+
+  // Remove all listeners
+  clearListeners() {
+    this._listeners.clear();
+    this._propertyListeners.clear();
+  }
+
+  // Get current listener count
+  getListenerCount() {
+    return this._listeners.size;
+  }
+
+  // Get property listener count
+  getPropertyListenerCount(propertyPattern = null) {
+    if (propertyPattern) {
+      const listeners = this._propertyListeners.get(propertyPattern);
+      return listeners ? listeners.size : 0;
+    }
+
+    let total = 0;
+    this._propertyListeners.forEach((listeners) => {
+      total += listeners.size;
+    });
+    return total;
+  }
+
+  // Get all property patterns that have listeners
+  getPropertyPatterns() {
+    return Array.from(this._propertyListeners.keys());
+  }
+
+  // Set batch delay (0 = next tick, >0 = milliseconds)
+  setBatchDelay(delay) {
+    this._batchDelay = Math.max(0, delay);
+  }
+
+  // Force flush pending changes immediately
+  flushChanges() {
+    if (this._batchTimeout) {
+      clearTimeout(this._batchTimeout);
+      this._batchTimeout = null;
+    }
+
+    if (this._batchedChanges.size > 0) {
+      const changes = Array.from(this._batchedChanges.values());
+      this._batchedChanges.clear();
+      this._notifyListeners(changes);
+    }
+  }
+
+  // Check if currently in a batch update
+  isInBatch() {
+    return this._isInBatch;
+  }
+
+  // Perform multiple changes in a single batch
+  batchUpdate(updateFn) {
+    const wasInBatch = this._isInBatch;
+    this._isInBatch = true;
+
+    try {
+      updateFn(this);
+    } finally {
+      this._isInBatch = wasInBatch;
+      if (!wasInBatch) {
+        this.flushChanges();
+      }
+    }
+  }
+
+  // Convert to plain object (useful for serialization)
+  toPlainObject() {
+    const result = {};
+
+    for (const key in this) {
+      if (!key.startsWith("_")) {
+        const value = this[key];
+        if (value && typeof value === "object") {
+          if (Array.isArray(value)) {
+            result[key] = value.map((item) =>
+              item && typeof item === "object" && item.toPlainObject ? item.toPlainObject() : item
+            );
+          } else if (value.toPlainObject) {
+            result[key] = value.toPlainObject();
+          } else {
+            result[key] = { ...value };
+          }
+        } else {
+          result[key] = value;
+        }
       }
     }
 
-    return this;
+    return result;
+  }
+}
+
+// Collection class for managing arrays of models
+export class WebMVCCollection extends WebMVCModel {
+  constructor(ModelClass, initialData = []) {
+    super();
+
+    // Store the model class for creating new instances
+    Object.defineProperty(this, "_ModelClass", {
+      value: ModelClass,
+      writable: false,
+    });
+
+    // Initialize with array of model instances
+    this.items = initialData.map((data) => (data instanceof ModelClass ? data : new ModelClass(data)));
+
+    // Set up cascading listeners for individual model changes
+    this._setupModelListeners();
   }
 
-  /**
-   * Bind a property to a list container for rendering arrays
-   * @param {string} property - The property name (should be an array)
-   * @param {HTMLElement} container - The container element
-   * @param {Function} renderItem - Function to render each item
-   */
-  bindToList(property, container, renderItem) {
-    // Ensure the property is an array
-    if (!Array.isArray(this[property])) {
-      this[property] = [];
-    }
+  // Set up listeners for individual model changes
+  _setupModelListeners() {
+    this.items.forEach((model, index) => {
+      if (model instanceof WebMVCModel) {
+        model.addListener((changes) => {
+          // Re-emit changes with collection context
+          const collectionChanges = changes.map((change) => ({
+            ...change,
+            path: `items[${index}].${change.path}`,
+            collectionIndex: index,
+            model: model,
+          }));
+          this._recordCollectionChange("model_update", collectionChanges);
+        });
+      }
+    });
+  }
 
-    // Create a proxy for the array to intercept mutations
-    const arrayProxy = new Proxy(this[property], {
-      set: (target, index, value) => {
-        target[index] = value;
-        this._renderList(property, container, renderItem);
-        this._notifyListeners(property, target);
+  // Record collection-level changes
+  _recordCollectionChange(type, data) {
+    this._recordChange(`collection.${type}`, null, {
+      type,
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  // Override array proxy to handle model instances
+  _createArrayProxy(array, path) {
+    const self = this;
+
+    return new Proxy(array, {
+      get(arr, prop) {
+        if (typeof arr[prop] === "function") {
+          const originalMethod = arr[prop];
+
+          if (["push", "pop", "shift", "unshift", "splice"].includes(prop)) {
+            return function (...args) {
+              const oldLength = arr.length;
+              const result = originalMethod.apply(arr, args);
+
+              // Set up listeners for newly added models
+              if (["push", "unshift", "splice"].includes(prop)) {
+                self._setupModelListeners();
+              }
+
+              self._recordChange(path, oldLength, arr.length);
+              self._recordCollectionChange(`array_${prop}`, {
+                method: prop,
+                args: args,
+                oldLength,
+                newLength: arr.length,
+              });
+
+              return result;
+            };
+          }
+        }
+
+        return arr[prop];
+      },
+
+      set(arr, prop, newValue) {
+        if (!isNaN(prop)) {
+          const oldValue = arr[prop];
+
+          // Convert plain objects to model instances
+          if (newValue && typeof newValue === "object" && !(newValue instanceof self._ModelClass)) {
+            newValue = new self._ModelClass(newValue);
+          }
+
+          arr[prop] = newValue;
+
+          // Set up listener for new model
+          if (newValue instanceof ObservableDataModel) {
+            newValue.addListener((changes) => {
+              const collectionChanges = changes.map((change) => ({
+                ...change,
+                path: `items[${prop}].${change.path}`,
+                collectionIndex: parseInt(prop),
+                model: newValue,
+              }));
+              self._recordCollectionChange("model_update", collectionChanges);
+            });
+          }
+
+          self._recordChange(`${path}[${prop}]`, oldValue, newValue);
+        } else {
+          arr[prop] = newValue;
+        }
+
         return true;
       },
     });
+  }
 
-    // Override array methods to trigger updates
-    const methodsToOverride = ["push", "pop", "shift", "unshift", "splice", "sort", "reverse"];
-    methodsToOverride.forEach((method) => {
-      const originalMethod = arrayProxy[method];
-      arrayProxy[method] = function (...args) {
-        const result = originalMethod.apply(this, args);
-        this._renderList(property, container, renderItem);
-        this._notifyListeners(property, this);
-        return result;
-      }.bind(this);
-    });
+  // Collection-specific methods
+  add(data) {
+    const model = data instanceof this._ModelClass ? data : new this._ModelClass(data);
+    this.items.push(model);
+    return model;
+  }
 
-    // Replace the original array with the proxy
-    this[property] = arrayProxy;
+  remove(predicate) {
+    const index = typeof predicate === "function" ? this.items.findIndex(predicate) : this.items.indexOf(predicate);
 
-    // Store the binding
-    this._bindings.set(property, { container, renderItem, type: "list" });
+    if (index > -1) {
+      return this.items.splice(index, 1)[0];
+    }
+    return null;
+  }
 
-    // Initial render
-    this._renderList(property, container, renderItem);
+  findById(id) {
+    return this.items.find((item) => item.id === id);
+  }
 
+  findBy(predicate) {
+    return this.items.find(predicate);
+  }
+
+  filterBy(predicate) {
+    return this.items.filter(predicate);
+  }
+
+  update(id, data) {
+    const model = this.findById(id);
+    if (model) {
+      model.batchUpdate((m) => Object.assign(m, data));
+      return model;
+    }
+    return null;
+  }
+
+  clear() {
+    this.items.length = 0;
+  }
+
+  get length() {
+    return this.items.length;
+  }
+
+  // Array-like methods
+  /////////////////////////////////////////////////////////////////////////////
+
+  // Map over the items - returns a new array (not a collection)
+  map(callback, thisArg) {
+    return this.items.map(callback, thisArg);
+  }
+
+  // Filter items - returns a new array (not a collection)
+  filter(callback, thisArg) {
+    return this.items.filter(callback, thisArg);
+  }
+
+  // Reduce the items
+  reduce(callback, initialValue) {
+    return arguments.length >= 2 ? this.items.reduce(callback, initialValue) : this.items.reduce(callback);
+  }
+
+  // Find first item matching predicate
+  find(callback, thisArg) {
+    return this.items.find(callback, thisArg);
+  }
+
+  // Find index of first item matching predicate
+  findIndex(callback, thisArg) {
+    return this.items.findIndex(callback, thisArg);
+  }
+
+  // Check if some items match predicate
+  some(callback, thisArg) {
+    return this.items.some(callback, thisArg);
+  }
+
+  // Check if all items match predicate
+  every(callback, thisArg) {
+    return this.items.every(callback, thisArg);
+  }
+
+  // Execute function for each item
+  forEach(callback, thisArg) {
+    return this.items.forEach(callback, thisArg);
+  }
+
+  // Get item at index
+  at(index) {
+    return this.items.at ? this.items.at(index) : this.items[index];
+  }
+
+  // Get first item
+  first() {
+    return this.items[0];
+  }
+
+  // Get last item
+  last() {
+    return this.items[this.items.length - 1];
+  }
+
+  // Check if collection includes an item
+  includes(item) {
+    return this.items.includes(item);
+  }
+
+  // Get index of item
+  indexOf(item) {
+    return this.items.indexOf(item);
+  }
+
+  // Create a new collection with filtered items
+  createFiltered(predicate) {
+    const filteredItems = this.items.filter(predicate);
+    return new ObservableCollection(this._ModelClass, filteredItems);
+  }
+
+  // Create a new collection with sorted items
+  createSorted(compareFn) {
+    const sortedItems = [...this.items].sort(compareFn);
+    return new ObservableCollection(this._ModelClass, sortedItems);
+  }
+
+  // Sort the current collection (modifies original)
+  sort(compareFn) {
+    this.items.sort(compareFn);
     return this;
   }
 
-  /**
-   * Update bound DOM elements when a property changes
-   * @private
-   */
-  _updateBoundElements(property, value) {
-    const bindings = this._bindings.get(property);
-    if (bindings) {
-      if (bindings.type === "list") {
-        // Handle list binding
-        this._renderList(property, bindings.container, bindings.renderItem);
-      } else {
-        // Handle element bindings
-        bindings.forEach((binding) => {
-          this._updateElementValue(binding.element, value);
-        });
-      }
-    }
+  // Reverse the current collection (modifies original)
+  reverse() {
+    this.items.reverse();
+    return this;
   }
 
-  /**
-   * Update an element's value based on its type
-   * @private
-   */
-  _updateElementValue(element, value) {
-    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-      element.value = value;
-    } else {
-      element.textContent = value;
-    }
+  // Get a slice of items (returns new array, not collection)
+  slice(start, end) {
+    return this.items.slice(start, end);
   }
 
-  /**
-   * Get an element's value based on its type
-   * @private
-   */
-  _getElementValue(element) {
-    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-      return element.value;
-    } else {
-      return element.textContent;
-    }
+  // Make collection iterable
+  [Symbol.iterator]() {
+    return this.items[Symbol.iterator]();
   }
 
-  /**
-   * Render a list in the container
-   * @private
-   */
-  _renderList(property, container, renderItem) {
-    const items = this[property];
-    container.innerHTML = "";
-
-    items.forEach((item, index) => {
-      const element = renderItem(item, index);
-      container.appendChild(element);
-    });
+  // Convert to plain array
+  toArray() {
+    return this.items.map((item) => (item.toPlainObject ? item.toPlainObject() : item));
   }
 }

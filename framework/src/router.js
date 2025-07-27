@@ -1,4 +1,5 @@
-//import { h } from "./jsx-runtime.js";
+// Copyright (c) 2025 Congjun Yang
+// framework/src/router.js
 
 export class Router {
   constructor() {
