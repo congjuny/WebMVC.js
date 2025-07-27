@@ -7,23 +7,26 @@ export class CounterDisplay extends WebMVCComponent {
     console.log("CounterDisplay created", this);
 
     if (this.model?.addListener) {
-      this.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+      this.model.addListener((changes, model) => this.update(changes, model));
     }
   }
 
-  update(property, newValue, oldValue) {
-    console.log("CounterDisplay.update() called, newValue =", newValue, "oldValue =", oldValue);
+  update(changes, model) {
+    changes.forEach((change) => {
+      const { path, newValue, oldValue } = change;
+      console.log(`CounterDisplay.update() - ${path}: "${oldValue}" → "${newValue}"`);
 
-    // either directly update the element or call base update to re-create the DOM
-    // this.refs.counterDisplay.textContent = `Count: ${this.model?.count || 0}`;
-    super.update(property, newValue, oldValue);
+      // either directly update the element or call base update to re-create the DOM
+      // this.refs.counterDisplay.textContent = `Count: ${this.model?.count || 0}`;
+      super.update(changes, model);
 
-    // You can add any specific update logic here if needed
-    if (newValue > 50) {
-      this.refs.counterDisplay.style.color = "red";
-    } else {
-      this.refs.counterDisplay.style.color = "#007bff";
-    }
+      // You can add any specific update logic here if needed
+      if (newValue > 50) {
+        this.refs.counterDisplay.style.color = "red";
+      } else {
+        this.refs.counterDisplay.style.color = "#007bff";
+      }
+    });
   }
 
   render() {

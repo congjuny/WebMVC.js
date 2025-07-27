@@ -10,7 +10,7 @@ export class App extends WebMVCComponent {
     super({ model });
     this.model = model;
 
-    this.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+    this.model.addListener((changes, model) => this.update(changes, model));
   }
 
   updateUserPreview = () => {
@@ -43,10 +43,15 @@ export class App extends WebMVCComponent {
   }
 
   // Helper functions
-  logChange(property, newValue, oldValue) {
+  logChange(changes, model) {
     const log = this.refs.logChange;
     const timestamp = new Date().toLocaleTimeString();
-    log.innerHTML += `<div>[${timestamp}] ${this.model.constructor.name}.${property}: "${oldValue}" → "${newValue}"</div>`;
+
+    changes.forEach((change) => {
+      const { path, newValue, oldValue } = change;
+      log.innerHTML += `<div>[${timestamp}] ${this.model.constructor.name}.${path}: "${oldValue}" → "${newValue}"</div>`;
+    });
+
     log.scrollTop = log.scrollHeight;
   }
 
@@ -54,13 +59,14 @@ export class App extends WebMVCComponent {
     this.refs.logChange.innerHTML = "";
   }
 
-  update(property, newValue, oldValue) {
-    console.log(`App.update(): property:${property} new=${newValue} old=${oldValue}`);
+  update(changes, model) {
+    console.log(`App.update(): changes:`, changes);
     console.log(`App.update() allRefs: `, this.allRefs);
 
     try {
+      /*
       if (property === "count") {
-        this.childComponents["counter-input"].refs.counterInput.value = Number(newValue); // Update input value directly
+        this.childComponents["counter-input"].refs.counterInput.value = Number(model.counter); // Update input value directly
       } else if (property === "name") {
         this.childComponents["name-input"].refs.nameInput.value = newValue; // Update name input value directly
       } else if (property === "email") {
@@ -70,9 +76,15 @@ export class App extends WebMVCComponent {
       } else if (property === "isActive") {
         this.refs.activeCheckbox.checked = newValue; // Update active checkbox directly
       }
+      */
+      //this.childComponents["counter-input"].refs.counterInput.value = Number(model.counter);
+      //this.childComponents["name-input"].refs.nameInput.value = model.name; // Update name input value directly
+      //this.childComponents["email-input"].refs.emailInput.value = model.email; // Update email input value directly
+      this.refs.ageInput.value = model.age; // Update age input value directly
+      this.refs.activeCheckbox.checked = model.isActive; // Update active checkbox directly
 
       this.updateUserPreview(); // Update user preview with new values
-      this.logChange(property, newValue, oldValue);
+      this.logChange(changes, model);
     } catch (error) {
       console.error("Error updating input fields:", error);
       console.error("Available refs:", this.refs);
@@ -94,7 +106,7 @@ export class App extends WebMVCComponent {
           <CounterInputField
             type="number"
             id="counter-input"
-            refName="counterInput"
+            refName="count"
             label="Count Input Value:"
             value={this.model.count}
             model={this.model}
@@ -109,7 +121,7 @@ export class App extends WebMVCComponent {
           <CounterInputField
             type="text"
             id="name-input"
-            refName="nameInput"
+            refName="name"
             label="Name:"
             model={this.model}
             onInput={(newValue) => this.model.setName(newValue)}
@@ -117,7 +129,7 @@ export class App extends WebMVCComponent {
           <CounterInputField
             type="text"
             id="email-input"
-            refName="emailInput"
+            refName="email"
             label="Email:"
             model={this.model}
             onInput={(newValue) => (this.model.email = newValue)}

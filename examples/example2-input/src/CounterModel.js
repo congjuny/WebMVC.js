@@ -1,10 +1,15 @@
 import { WebMVCModel } from "web-mvc-js";
 
 export class CounterModel extends WebMVCModel {
-  count = 0;
-  name = "";
-  email = "";
-  isActive = true;
+  constructor(data = {}) {
+    super({
+      count: 0,
+      name: "",
+      email: "",
+      isActive: true,
+      ...data,
+    });
+  }
 
   increment() {
     this.count++;

@@ -6,13 +6,20 @@ export class CounterInputField extends WebMVCComponent {
     this.props = props || {};
 
     if (this.props.model?.addListener) {
-      this.props.model.addListener((property, newValue, oldValue) => this.update(property, newValue, oldValue));
+      this.props.model.addListener((changes, model) => this.update(changes, model));
     }
     console.log("CounterInputField created", this);
   }
 
-  update(property, newValue, oldValue) {
-    console.log("CounterInputField.update() called, newValue =", newValue, "oldValue =", oldValue);
+  update(changes, model) {
+    console.log("CounterInputField.update() called, changes =", changes);
+    changes.forEach((change) => {
+      const { path, newValue, oldValue } = change;
+      console.log(`CounterInputField.update() - ${path}: "${oldValue}" → "${newValue}"`);
+      if (this.props.refName === path) {
+        this.refs[this.props.refName].value = newValue;
+      }
+    });
   }
 
   afterMount() {
