@@ -1,10 +1,10 @@
 <img src="images/WebMVC.svg" alt="WebMVC Logo" width="400" />
 
-A modern JavaScript framework for building **single-page applications** with a clean **Model–View–Controller** (MVC) architecture. You define the application views with **JSX syntax** augmented with references to DOM elements and components. No virtual DOM, just simplicity and speed. No hooks to a global blackbox state machine. You define and control your data model and state - This is Web programming the way it should have been!
+A modern JavaScript framework for building **single-page applications** with a clean **Model–View–Controller** (MVC) architecture. You define the application views with **JSX syntax** augmented. No virtual DOM, just simplicity and speed. No hooks to a global blackbox state machine, you define and control your data model and state. Don't over-engineer. This is Web programming the way it should have been!
 
 ## ✨ Features
 
-- 🧩 **Component-based** UI architecture with JSX syntax. A component class defined serves as the controller for the corresponding DOM component returned from the render() function. You may add a "ref" attribute for any DOM element or an Id attribute for your custom component if you need access to access to it in your controller functions.
+- 🧩 **Component-based** UI architecture with JSX syntax. A component class defined serves as the controller for the corresponding DOM component returned from the render() function. You may add a "ref" attribute for any DOM element or an Id attribute for your custom component if you need access to it in your controller functions.
 - 🧠 **Model-driven state management** (Observer-style)
 - ⚡ **JSX support** (via a lightweight `h()` function)
 - 🔁 **Automatic re-render on model changes**. The default behavior is re-rendering the whole component. You may override it with your own update() function. You have direct access to any DOM element with a "ref" attribute.
