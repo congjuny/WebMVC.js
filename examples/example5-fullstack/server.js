@@ -1,10 +1,11 @@
 // server.mjs
 
 import express from "express";
-import { resolve } from "path";
 import ViteExpress from "vite-express";
 
 const app = express();
+
+app.use(express.json());
 
 // API routes
 app.use("/api", (await import("./backend/api.js")).default);

@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "sqlite3": "^5.1.6",
+    "sqlite": "^5.1.1",
     "vite": "^7.0.6",
     "vite-express": "^0.21.1"
   }

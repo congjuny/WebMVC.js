@@ -8,27 +8,61 @@ export class App extends WebMVCComponent {
     super();
     this.employeeList = new WebMVCCollection(EmployeeModel, []);
 
-    this.loadSampleData();
+    this.loadEmployees();
   }
 
-  loadSampleData = () => {
-    const sampleEmployees = [
-      { name: "John Doe", email: "john@example.com", position: "Software Developer", salary: 75000 },
-      { name: "Jane Smith", email: "jane@example.com", position: "Project Manager", salary: 85000 },
-      { name: "Mike Johnson", email: "mike@example.com", position: "Designer", salary: 65000 },
-    ];
+  loadEmployees = () => {
+    fetch("/api/employees")
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Failed to fetch employees");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Employees:", data);
 
-    sampleEmployees.forEach((employee) => {
-      employee.id = this.getNewEmployeeId(); // Assign a new ID
-      this.employeeList.add(employee);
-    });
+        if (Array.isArray(data)) {
+          data.forEach((employee) => {
+            this.employeeList.add(employee);
+          });
+        } else {
+          console.warn("Expected an array of employees, but got:", data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error:", err);
+      });
 
     console.log("After loading sample data, employeeList =", this.employeeList);
   };
 
-  getNewEmployeeId() {
-    return this.employeeList.length > 0 ? Math.max(...this.employeeList.map((emp) => emp.id)) + 1 : 1;
-  }
+  addEmployee = (data) => {
+    console.log("Adding employee with data:", JSON.stringify(data));
+    return fetch("/api/employees", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to add employee");
+      return res.json();
+    });
+  };
+
+  updateEmployee = (data) => {
+    return fetch(`/api/employees/${data.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to update employee");
+      return res.json();
+    });
+  };
 
   onStartEdit = (id) => {
     const employee = this.employeeList.findById(id);
@@ -46,7 +80,7 @@ export class App extends WebMVCComponent {
     }
   };
 
-  onAddOrEdit = (mode, employee) => {
+  onAddOrEdit = async (mode, employee) => {
     if (employee.validate()) {
       if (mode === "edit") {
         console.log("Employee with updates:", employee);
@@ -54,10 +88,13 @@ export class App extends WebMVCComponent {
         if (curremp) {
           Object.assign(curremp, employee);
         }
+        this.updateEmployee(curremp.toPlainObject());
         console.log("After update, employeeList =", this.employeeList);
       } else {
-        const newemp = new EmployeeModel(employee.toPlainObject());
-        newemp.id = this.getNewEmployeeId();
+        const tmp = await this.addEmployee(employee.toPlainObject());
+        console.log("New employee added to DB:", tmp);
+
+        const newemp = new EmployeeModel(tmp);
         console.log("Adding new employee:", newemp);
         this.employeeList.add(newemp);
       }
