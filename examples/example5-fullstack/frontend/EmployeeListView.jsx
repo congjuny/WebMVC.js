@@ -1,4 +1,5 @@
 import { WebMVCComponent } from "web-mvc-js";
+import { Loader } from "./loader"; // Assuming you have a Loader component for loading state
 
 export class EmployeeListView extends WebMVCComponent {
   constructor(props) {
@@ -41,7 +42,13 @@ export class EmployeeListView extends WebMVCComponent {
             </tr>
           </thead>
           <tbody id="employeeTableBody">
-            {this.model?.items?.length > 0 ? (
+            {this.model?.loading ? (
+              <tr>
+                <td colSpan="6" style="text-align: center;">
+                  <Loader msg="Loading employees........" margin={30} />
+                </td>
+              </tr>
+            ) : this.model?.items?.length > 0 ? (
               this.model.items.map((employee) => (
                 <tr key={employee.id}>
                   <td>{employee.id}</td>

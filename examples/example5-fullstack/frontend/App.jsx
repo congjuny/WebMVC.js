@@ -7,11 +7,13 @@ export class App extends WebMVCComponent {
   constructor() {
     super();
     this.employeeList = new WebMVCCollection(EmployeeModel, []);
+    this.employeeList.loading = false;
 
     this.loadEmployees();
   }
 
   loadEmployees = () => {
+    this.employeeList.loading = true;
     fetch("/api/employees")
       .then((res) => {
         if (!res.ok) {
@@ -29,9 +31,11 @@ export class App extends WebMVCComponent {
         } else {
           console.warn("Expected an array of employees, but got:", data);
         }
+        this.employeeList.loading = false;
       })
       .catch((err) => {
         console.error("Error:", err);
+        this.employeeList.loading = false;
       });
 
     console.log("After loading sample data, employeeList =", this.employeeList);

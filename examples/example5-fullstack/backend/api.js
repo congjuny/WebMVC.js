@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getDb } from "./db.js";
+import { sleep } from "../utils/utils.js";
 
 const router = Router();
 
@@ -12,6 +13,8 @@ router.get("/employees", async (req, res) => {
   const employees = await db.all("SELECT * FROM employees");
 
   console.log("Fetched employees:", employees);
+  await sleep(3000); // Simulate a delay for demonstration purposes
+
   res.json(employees);
 });
 
