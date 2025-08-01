@@ -4,7 +4,7 @@
 export function h(tag, props, ...children) {
   //console.log("h() called with tag:", tag, "props:", props, "children:", children);
 
-  return { tag, props: props || {}, children: children.flat() };
+  return { tag, props: props || {}, children };
 }
 
 export function createElement(vnode, parentElement = null) {
@@ -27,7 +27,7 @@ export function createElement(vnode, parentElement = null) {
   }
 
   if (typeof tag === "function") {
-    const instance = new tag(props);
+    const instance = new tag({ ...props, children: children });
 
     // Track parent-child relationship
     if (h.currentComponent) {
@@ -72,12 +72,34 @@ export function createElement(vnode, parentElement = null) {
     });
   }
 
-  for (const child of children) {
+  for (const child of normalizeChildren(children)) {
     const node = createElement(child, el);
-    if (node) el.appendChild(node);
+    if (node) {
+      el.appendChild(node);
+    }
   }
 
   return el;
+}
+
+function normalizeChildren(children) {
+  if (children == null || children === false) {
+    return [];
+  }
+
+  // Flatten arbitrarily nested arrays but preserve child structure
+  const out = [];
+
+  function recurse(c) {
+    if (Array.isArray(c)) {
+      for (const i of c) recurse(i);
+    } else {
+      out.push(c);
+    }
+  }
+
+  recurse(children);
+  return out;
 }
 
 export const Fragment = Symbol("Fragment");
