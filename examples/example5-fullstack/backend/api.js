@@ -13,7 +13,7 @@ router.get("/employees", async (req, res) => {
   const employees = await db.all("SELECT * FROM employees");
 
   console.log("Fetched employees:", employees);
-  await sleep(3000); // Simulate a delay for demonstration purposes
+  await sleep(500); // Simulate a delay for demonstration purposes
 
   res.json(employees);
 });
@@ -61,6 +61,7 @@ router.post("/employees", async (req, res) => {
 
     res.status(201).json({ id: result.lastID, name, email, position, salary });
   } catch (err) {
+    console.error("Error inserting record into DB:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -105,6 +106,7 @@ router.delete("/employees/:id", async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
+    console.error("Error deleting employee:", err);
     res.status(500).json({ error: err.message });
   }
 });

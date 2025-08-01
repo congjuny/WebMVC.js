@@ -2,7 +2,13 @@
 
 A fullstack Node.js & ExpressJS application built with Vite.
 
-SQLite is the DB
+Two major components to demonstrate the data flow between them and how the parent component serves as a controller over the children components.
+
+Utility function sleep() to simulate delay and a loader to show work in progress.
+
+A confirm modal that pops up for record deletion.
+
+SQLite is the DB behind the API in the backend.
 
 ## Getting Started
 

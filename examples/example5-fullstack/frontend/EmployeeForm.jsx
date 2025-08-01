@@ -105,11 +105,11 @@ export class EmployeeForm extends WebMVCComponent {
               type="number"
               id="salary"
               min="0"
-              step="1000"
+              step="100"
               required
               value={this.model?.salary}
               ref="salaryInput"
-              onInput={(e) => this.model.setSalary(e.target.value, this.model)}
+              onInput={(e) => this.model.setSalary(e.target.value)}
             />
           </div>
 

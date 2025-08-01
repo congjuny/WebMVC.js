@@ -68,6 +68,19 @@ export class App extends WebMVCComponent {
     });
   };
 
+  deleteEmployee = (data) => {
+    return fetch(`/api/employees/${data.id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      //body: JSON.stringify(data),
+    }).then((res) => {
+      if (!res.ok) throw new Error("Failed to delete employee");
+      return res.json();
+    });
+  };
+
   onStartEdit = (id) => {
     const employee = this.employeeList.findById(id);
     this.childComponents["employeeForm"].setEmployee(employee.toPlainObject());
@@ -81,6 +94,14 @@ export class App extends WebMVCComponent {
     const employee = this.employeeList.findById(id);
     if (employee) {
       this.employeeList.remove(employee);
+      this.deleteEmployee(employee.toPlainObject())
+        .then(() => {
+          console.log("Employee deleted successfully");
+        })
+        .catch((err) => {
+          console.error("Error deleting employee:", err);
+          this.employeeList.add(employee); // Re-add the employee if deletion fails
+        });
     }
   };
 

@@ -1,5 +1,6 @@
 import { WebMVCComponent } from "web-mvc-js";
 import { Loader } from "./loader"; // Assuming you have a Loader component for loading state
+import { ConfirmModal } from "./modal/modal";
 
 export class EmployeeListView extends WebMVCComponent {
   constructor(props) {
@@ -7,12 +8,32 @@ export class EmployeeListView extends WebMVCComponent {
     this.model = props?.model;
     this.onEdit = props?.onEdit;
     this.onDelete = props?.onDelete;
+
+    this.model.isConfirmOpen = false;
+
     console.log("EmployeeListView created", this);
 
     if (this.model?.addListener) {
       this.model.addListener((changes, model) => this.update(changes, model));
     }
   }
+
+  handleDeleteConfirm = (id) => {
+    console.log("Confirm deletion for employee ID:", id);
+    this.onDelete(id);
+    this.model.isConfirmOpen = false; // Close the confirmation modal
+  };
+
+  handleDeleteCancel = () => {
+    console.log("Deletion cancelled");
+    this.model.isConfirmOpen = false; // Close the confirmation modal
+  };
+
+  showConfirmDeleteModal = (id) => {
+    console.log("Showing confirm delete modal for employee ID:", id);
+    this.current_id = id;
+    this.model.isConfirmOpen = true; // Open the confirmation modal
+  };
 
   update(changes, model) {
     console.log("EmployeeList.update() called, changes =", changes, "model =", model);
@@ -60,7 +81,7 @@ export class EmployeeListView extends WebMVCComponent {
                     <button class="btn-edit" onClick={() => this.onEdit(employee.id)}>
                       Edit
                     </button>
-                    <button class="btn-delete" onClick={() => this.onDelete(employee.id)}>
+                    <button class="btn-delete" onClick={() => this.showConfirmDeleteModal(employee.id)}>
                       Delete
                     </button>
                   </td>
@@ -75,6 +96,13 @@ export class EmployeeListView extends WebMVCComponent {
             )}
           </tbody>
         </table>
+        <ConfirmModal
+          isOpen={this.model.isConfirmOpen}
+          title="Confirm Deletion"
+          message="Are you sure you want to delete this employee?"
+          onConfirm={() => this.handleDeleteConfirm(this.current_id)}
+          onCancel={() => this.handleDeleteCancel()}
+        />
       </div>
     );
   }
