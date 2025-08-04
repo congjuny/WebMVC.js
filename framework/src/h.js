@@ -67,7 +67,17 @@ export function createElement(vnode, parentElement = null) {
         const eventName = key.slice(2).toLowerCase();
         el.addEventListener(eventName, value);
       } else if (value !== null && value !== undefined) {
-        el.setAttribute(key, value);
+        if (typeof value === "object") {
+          const str = Object.entries(value)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("; ");
+
+          console.log("attribute object value: ", str);
+          el.setAttribute(key, str);
+        } else {
+          console.log(`attribute string value: `, value);
+          el.setAttribute(key, value);
+        }
       }
     });
   }
