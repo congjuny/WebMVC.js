@@ -9,6 +9,10 @@ export class CounterButton extends WebMVCComponent {
 
   render() {
     console.log("Rendering Button with label =", this.label);
-    return <button onClick={this.handler}>{this.label}</button>;
+    return (
+      <button onClick={this.handler} style={{ color: this.label === "Decrement" ? "red" : "blue" }}>
+        {this.label}
+      </button>
+    );
   }
 }

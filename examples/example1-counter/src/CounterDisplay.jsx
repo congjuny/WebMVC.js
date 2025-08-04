@@ -17,7 +17,7 @@ export class CounterDisplay extends WebMVCComponent {
     return (
       <div>
         <CounterTitle />
-        <p>A 'Hello, World!' app with the WebMVC.js framework</p>
+        <p>A 'Hello, World!' app with MVC design pattern</p>
         <h2>Count: {this.model?.count}</h2>
       </div>
     );
