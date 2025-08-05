@@ -8,9 +8,9 @@ export class EmployeeForm extends WebMVCComponent {
     this.onAddOrEdit = props?.onAddOrEdit;
     this.onCancel = props?.onCancel;
 
-    this.mode = "add"; // Default mode is 'add'
+    this.model = new EmployeeModel({ mode: "add" }); // Initialize model
 
-    this.model = new EmployeeModel(); // Initialize model
+    //this.model.mode = "add";
 
     if (this.model?.addListener) {
       this.model.addListener((changes, model) => this.update(changes, model));
@@ -19,28 +19,19 @@ export class EmployeeForm extends WebMVCComponent {
   }
 
   setEmployee(employee) {
-    // we could add a "mode" property to the model so that UI updates are handled in update()
     if (employee) {
-      //Object.assign(this.model, employee); // Copy all properties from employee to model
-      //this.model.update(employee);
-
       this.model.setAllFields(employee);
-
-      this.refs.addButton.textContent = "Update Employee";
-      this.refs.cancelButton.style.display = "inline-block";
-      this.refs.formTitle.textContent = "Edit Employee";
-      this.mode = "edit"; // Set mode to 'edit'
+      this.model.mode = "edit"; // Set mode to 'edit'
     } else {
+      this.model.mode = "add"; // Reset mode to 'add'
       this.model.reset();
-      this.refs.addButton.textContent = "Add Employee";
-      this.refs.cancelButton.style.display = "none";
-      this.refs.formTitle.textContent = "Add New Employee";
-      this.mode = "add"; // Reset mode to 'add'
     }
   }
 
   update(changes, model) {
     console.log("EmployeeForm.update() called, changes =", changes);
+    super.update(changes, model);
+    /*
     changes.forEach((change) => {
       const { path, newValue, oldValue } = change;
       if (newValue !== oldValue) {
@@ -55,13 +46,24 @@ export class EmployeeForm extends WebMVCComponent {
         }
       }
     });
+
+    if (this.model.mode === "add") {
+      this.refs.addButton.textContent = "Add Employee";
+      this.refs.cancelButton.style.display = "none";
+      this.refs.formTitle.textContent = "Add New Employee";
+    } else {
+      this.refs.addButton.textContent = "Update Employee";
+      this.refs.cancelButton.style.display = "inline-block";
+      this.refs.formTitle.textContent = "Edit Employee";
+    }
+  */
   }
 
   render() {
     console.log("EmployeeForm.render() with name=", this.model?.name);
     return (
       <div class="form-section">
-        <h3 ref="formTitle">Add New Employee</h3>
+        <h3 ref="formTitle">{this.model.mode === "add" ? "Add Employee" : "Edit Employee"}</h3>
         <form id="employeeForm">
           <div class="form-group">
             <label for="name">Name:</label>
@@ -119,12 +121,18 @@ export class EmployeeForm extends WebMVCComponent {
               ref="addButton"
               onClick={(e) => {
                 e.preventDefault();
-                this.onAddOrEdit(this.mode, this.model);
+                this.onAddOrEdit(this.model.mode, this.model);
               }}
             >
-              Add Employee
+              {this.model.mode === "add" ? "Add Employee" : "Edit Employee"}
             </button>
-            <button type="button" ref="cancelButton" onClick={this.onCancel} class="btn-cancel" style="display: none;">
+            <button
+              type="button"
+              ref="cancelButton"
+              onClick={this.onCancel}
+              class="btn-cancel"
+              style={{ display: this.model.mode === "add" ? "none" : "inline-block" }}
+            >
               Cancel
             </button>
           </div>

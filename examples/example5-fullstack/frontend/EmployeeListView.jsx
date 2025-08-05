@@ -40,7 +40,11 @@ export class EmployeeListView extends WebMVCComponent {
 
     // either directly update the element or call base update to re-create the DOM
     super.update(changes, model);
+
+    console.log("EmployeeList.update() refs=", this.refs);
   }
+  /*
+   */
 
   render() {
     console.log("EmployeeListView.render() with employees =", this.model);
@@ -51,7 +55,7 @@ export class EmployeeListView extends WebMVCComponent {
     return (
       <div class="table-section">
         <h3>Employee List</h3>
-        <table id="employeeTable">
+        <table id="employeeTable" ref="employeeTable">
           <thead>
             <tr>
               <th>ID</th>
@@ -71,7 +75,8 @@ export class EmployeeListView extends WebMVCComponent {
               </tr>
             ) : this.model?.items?.length > 0 ? (
               this.model.items.map((employee) => (
-                <tr key={employee.id}>
+                // added ref only to test DOM merge function
+                <tr key={employee.id} ref={"id-" + employee.id}>
                   <td>{employee.id}</td>
                   <td>{employee.name}</td>
                   <td>{employee.email}</td>
