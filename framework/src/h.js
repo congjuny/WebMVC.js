@@ -68,14 +68,12 @@ export function createElement(vnode, parentElement = null) {
         el.addEventListener(eventName, value);
       } else if (value !== null && value !== undefined) {
         if (typeof value === "object") {
+          // Handle object values (e.g., style) using {{}} syntax
           const str = Object.entries(value)
             .map(([k, v]) => `${k}: ${v}`)
             .join("; ");
-
-          console.log("attribute object value: ", str);
           el.setAttribute(key, str);
         } else {
-          console.log(`attribute string value: `, value);
           el.setAttribute(key, value);
         }
       }

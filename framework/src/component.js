@@ -101,7 +101,7 @@ export class WebMVCComponent {
 
     //this.parentElement.replaceChild(dom, oldEl);
     this.mergeDOMElements(oldEl, dom2);
-    console.log(`${this.constructor.name} update() merged element:`, oldEl.innerHTML);
+    //console.log(`${this.constructor.name} update() merged element:`, oldEl.innerHTML);
   }
 
   getRef(refName) {
@@ -143,8 +143,14 @@ export class WebMVCComponent {
       if (target.getAttribute(attr.name) !== attr.value) {
         this.logChange(`Updated attribute: ${attr.name} = "${attr.value}"`);
         target.setAttribute(attr.name, attr.value);
+
+        // TO DO: this is very rough - need to handle properties and attributes carefully
+        if (source[attr.name] !== undefined) {
+          target[attr.name] = source[attr.name]; // also update property if exists
+        }
       }
     }
+    //console.log("target after attribute merge: ", target.innerHTML);
 
     // Remove attributes that don't exist in source (except id and class for demo)
     for (let attr of [...target.attributes]) {
@@ -234,7 +240,7 @@ export class WebMVCComponent {
   }
 
   logChange(message) {
-    console.log(`[${this.constructor.name}] ${message}`);
+    //console.log(`[${this.constructor.name}] ${message}`);
   }
 
   installEventHandlers(element) {
