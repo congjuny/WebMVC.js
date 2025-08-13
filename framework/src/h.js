@@ -74,7 +74,11 @@ export function createElement(vnode, parentElement = null) {
             .join("; ");
           el.setAttribute(key, str);
         } else {
-          el.setAttribute(key, value);
+          if (key === "className") {
+            el.setAttribute("class", value);
+          } else {
+            el.setAttribute(key, value);
+          }
         }
       }
     });
