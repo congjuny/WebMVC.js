@@ -1,5 +1,5 @@
-//
-import { WebMVCComponent } from "web-mvc-js";
+// users page
+// UsersPage.jsx
 
 //
 export default class UsersPage extends WebMVCComponent {

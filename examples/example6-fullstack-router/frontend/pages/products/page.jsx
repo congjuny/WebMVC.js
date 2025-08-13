@@ -1,6 +1,6 @@
-//
-import { WebMVCComponent } from "web-mvc-js";
-//
+// products page
+
+// ProductsPage.jsx
 export default class ProductsPage extends WebMVCComponent {
   constructor() {
     super();
@@ -13,13 +13,13 @@ export default class ProductsPage extends WebMVCComponent {
 
   render() {
     return (
-      <div className="page products-page">
+      <div class="page products-page">
         <h1>Our Products</h1>
         <p>Product listing loaded dynamically with its own chunk.</p>
 
-        <div className="product-grid">
+        <div class="product-grid">
           {this.products.map((product) => (
-            <div key={product.id} className="product-card">
+            <div key={product.id} class="product-card">
               <h3>{product.name}</h3>
               <p>${product.price}</p>
               <button>Add to Cart</button>

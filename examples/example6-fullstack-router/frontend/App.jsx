@@ -1,6 +1,6 @@
 import Navbar from "./components/Navbar.jsx";
 import Layout from "./components/Layout.jsx";
-import { Router, WebMVCComponent, WebMVCModel } from "web-mvc-js";
+//import { Router, WebMVCComponent, WebMVCModel } from "web-mvc-js";
 import HomePage from "./pages/page.jsx";
 import { ErrorComponent } from "./components/ErrorComponent.jsx";
 
@@ -13,6 +13,8 @@ export default class App extends WebMVCComponent {
 
     this.state.currentComponent = new HomePage();
     this.state.isLoading = false;
+
+    //this.setupRouterCallbacks();
   }
 
   setupRouterCallbacks() {
@@ -42,9 +44,9 @@ export default class App extends WebMVCComponent {
       <Layout id="layout">
         <Navbar onNavigate={this.handleNavigation} onPreload={this.handlePreload} currentPath={this.router.currentRoute} />
 
-        <main className="main-content" ref="main">
+        <main class="main-content" ref="main">
           {this.isLoading ? (
-            <div className="loading-spinner">
+            <div class="loading-spinner">
               <p>Loading route...</p>
               {/* You could add a fancy spinner here */}
             </div>

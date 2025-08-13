@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getDb } from "./db.js";
-import { sleep } from "../utils/utils.js";
+import { sleep } from "web-mvc-js";
 
 const router = Router();
 

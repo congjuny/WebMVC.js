@@ -1,5 +1,4 @@
 // loader.jsx
-import { WebMVCComponent } from "web-mvc-js";
 
 export class Loader extends WebMVCComponent {
   //constructor(props) {

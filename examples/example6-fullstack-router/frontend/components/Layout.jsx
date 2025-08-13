@@ -1,7 +1,6 @@
-//
-import { WebMVCComponent } from "web-mvc-js";
+// Layout.jsx
 
-// layout.jsx
+// Layout component for the application
 export default class Layout extends WebMVCComponent {
   constructor(props) {
     super(props);
@@ -9,16 +8,16 @@ export default class Layout extends WebMVCComponent {
 
   render() {
     return (
-      <div className="app-layout">
-        <header className="app-header">
+      <div class="app-layout">
+        <header class="app-header">
           {this.props.children[0]} {/* Navbar */}
         </header>
 
-        <div className="app-body">
+        <div class="app-body">
           {this.props.children[1]} {/* Main content */}
         </div>
 
-        <footer className="app-footer">
+        <footer class="app-footer">
           <p>&copy; 2025 My SPA. Built with Vite and Dynamic Imports.</p>
         </footer>
       </div>

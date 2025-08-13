@@ -1,5 +1,6 @@
-import { WebMVCComponent } from "web-mvc-js";
+// loader.jsx
 
+// ErrorComponent.jsx
 export class ErrorComponent extends WebMVCComponent {
   constructor(props) {
     super(props);
@@ -10,7 +11,7 @@ export class ErrorComponent extends WebMVCComponent {
 
   render() {
     return (
-      <div className="error-page">
+      <div class="error-page">
         <h1>Oops! Something went wrong</h1>
         <p>{this.error.message}</p>
         <button onClick={() => this.handleClick()}>Go Home</button>

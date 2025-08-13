@@ -1,6 +1,6 @@
-//
-import { WebMVCComponent } from "web-mvc-js";
+// about page
 
+// AboutPage.jsx
 export default class AboutPage extends WebMVCComponent {
   render() {
     return (

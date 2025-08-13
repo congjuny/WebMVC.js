@@ -1,5 +1,4 @@
 // src/components/Navbar.jsx
-import { WebMVCComponent } from "web-mvc-js";
 
 export default class Navbar extends WebMVCComponent {
   constructor(props) {

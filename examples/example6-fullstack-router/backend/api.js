@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { getDb } from "./db.js";
-import { sleep } from "../utils/utils.js";
 
 const router = Router();
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 router.get("/hello", (req, res) => {
   res.json({ message: "Hello from backend API!" });
