@@ -2,51 +2,69 @@
 // framework/src/router.js
 
 export class Router {
-  constructor() {
-    this.routes = new Map();
+  constructor({ rootEl, basePath = "" } = {}) {
+    this.routes = [];
+    this.basePath = basePath;
     this.currentPath = window.location.pathname;
-    this.container = null;
+    this.container = rootEl;
     this.currentComponent = null;
+
+    this.callbacks = {
+      onBeforeRoute: null,
+      onRouteStart: null,
+      onRouteComplete: null,
+      onRouteError: null,
+      onRouteNotFound: null,
+    };
+
+    const modules = import.meta.glob("@pages/**/page.jsx");
+
+    Object.keys(modules).forEach((path) => {
+      let routePath = path
+        .replace(/^.*\/pages\//, "/")
+        .replace(/\/page\.jsx$/, "")
+        .replace(/\[([^\]]+)\]/g, ":$1");
+
+      this.routes.push({
+        path: routePath,
+        load: modules[path], // dynamic import function
+      });
+    });
 
     // Listen for browser back/forward
     window.addEventListener("popstate", () => {
       this.navigate(window.location.pathname, false);
     });
-
-    // Intercept link clicks
-    document.addEventListener("click", (e) => {
-      if (e.target.tagName === "A" && e.target.getAttribute("href")?.startsWith("/")) {
-        e.preventDefault();
-        this.navigate(e.target.getAttribute("href"));
-      }
-    });
   }
 
-  route(path, ComponentClass) {
-    this.routes.set(path, ComponentClass);
-    return this;
+  setCallback(name, fn) {
+    if (this.callbacks.hasOwnProperty(name)) {
+      this.callbacks[name] = fn;
+    }
   }
 
   // Support dynamic routes like /user/:id
-  matchRoute(path) {
-    // Exact match first
-    if (this.routes.has(path)) {
-      return { ComponentClass: this.routes.get(path), params: {} };
-    }
+  matchRoute(urlPath) {
+    for (const route of this.routes) {
+      const params = {};
+      const routeParts = route.path.split("/").filter(Boolean);
+      const urlParts = urlPath.split("/").filter(Boolean);
 
-    // Dynamic route matching
-    for (const [pattern, ComponentClass] of this.routes) {
-      const regex = new RegExp("^" + pattern.replace(/:([^/]+)/g, "([^/]+)") + "$");
-      const match = path.match(regex);
+      if (routeParts.length !== urlParts.length) {
+        continue;
+      }
 
-      if (match) {
-        const paramNames = [...pattern.matchAll(/:([^/]+)/g)].map((m) => m[1]);
-        const params = {};
-        paramNames.forEach((name, i) => {
-          params[name] = match[i + 1];
-        });
+      let matched = true;
+      routeParts.forEach((part, i) => {
+        if (part.startsWith(":")) {
+          params[part.slice(1)] = urlParts[i];
+        } else if (part !== urlParts[i]) {
+          matched = false;
+        }
+      });
 
-        return { ComponentClass, params };
+      if (matched) {
+        return { route, params };
       }
     }
 
@@ -64,9 +82,34 @@ export class Router {
     await this.render();
   }
 
+  async preload(path) {
+    const match = this.matchRoute(path);
+    if (!match) {
+      return;
+    }
+
+    // Trigger the dynamic import, but ignore the result
+    match.route.load();
+  }
+
   async render() {
     if (!this.container) {
       return;
+    }
+
+    if (this.callbacks.onBeforeRoute) {
+      const shouldContinue = await this.hooks.onBeforeRoute(path, params);
+      if (shouldContinue === false) {
+        return;
+      }
+    }
+
+    const match = this.matchRoute(this.currentPath);
+    if (!match) {
+      if (this.callbacks.onRouteNotFound) {
+        this.callbacks.onRouteNotFound(path);
+        return;
+      }
     }
 
     // Unmount current component
@@ -78,16 +121,28 @@ export class Router {
     // Clear container
     this.container.innerHTML = "";
 
-    const match = this.matchRoute(this.currentPath);
-
     if (match) {
-      const { ComponentClass, params } = match;
+      // before loading
+      if (this.callbacks.onRouteStart) {
+        this.callbacks.onRouteStart(path, params);
+      }
+
+      const module = await match.route.load();
+      const ComponentClass = module.default;
+
       try {
         console.log("Router.render() component class:", ComponentClass);
-        this.currentComponent = new ComponentClass({ params, path: this.currentPath });
+        this.currentComponent = new ComponentClass(match.params);
 
         await this.currentComponent.mount(this.container);
+
+        if (this.callbacks.onRouteComplete) {
+          this.callbacks.onRouteComplete(path, params);
+        }
       } catch (error) {
+        if (this.callbacks.onRouteError) {
+          this.callbacks.onRouteError(path, params, error);
+        }
         throw new Error("Component mount() must return a DOM element");
       }
     } else {
@@ -106,6 +161,5 @@ export class Router {
       this.currentComponent.unmount();
     }
     window.removeEventListener("popstate", this.navigate);
-    document.removeEventListener("click", this.clickHandler);
   }
 }
