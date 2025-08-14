@@ -31,7 +31,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
 
-  // Resolve aliases to make imports cleaner
+  // need @pages defined to use the router for file based routing
   resolve: {
     alias: {
       "@": resolve(__dirname, "frontend"),
