@@ -9,7 +9,7 @@ export default class App extends WebMVCComponent {
     super();
 
     this.state = new WebMVCModel();
-    this.router = new Router();
+    this.router = new WebMVCRouter();
 
     this.state.currentComponent = new HomePage();
     this.state.isLoading = false;
