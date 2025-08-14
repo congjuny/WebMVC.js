@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Congjun Yang
 // framework/src/router.js
 
-export class Router {
+export class WebMVCRouter {
   constructor({ rootEl, basePath = "" } = {}) {
     this.routes = [];
     this.basePath = basePath;
