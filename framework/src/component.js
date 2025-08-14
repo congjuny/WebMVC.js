@@ -140,13 +140,26 @@ export class WebMVCComponent {
 
     // Copy all attributes from source to target
     for (let attr of source.attributes) {
+      const value = source[attr.name];
+
       if (target.getAttribute(attr.name) !== attr.value) {
         this.logChange(`Updated attribute: ${attr.name} = "${attr.value}"`);
         target.setAttribute(attr.name, attr.value);
 
         // TO DO: this is very rough - need to handle properties and attributes carefully
-        if (source[attr.name] !== undefined) {
-          target[attr.name] = source[attr.name]; // also update property if exists
+        if (value !== undefined) {
+          // Merge objects for certain properties
+          if (value && typeof value === "object") {
+            // For style, merge properties
+            if (attr.name === "style") {
+              Object.assign(target.style, value);
+            } else {
+              // Generic merge for other object props if needed
+              Object.assign(target[attr.name] || {}, value);
+            }
+          } else {
+            target[attr.name] = value;
+          }
         }
       }
     }
