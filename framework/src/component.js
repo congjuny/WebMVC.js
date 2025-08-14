@@ -152,7 +152,7 @@ export class WebMVCComponent {
           if (value && typeof value === "object") {
             // For style, merge properties
             if (attr.name === "style") {
-              Object.assign(target.style, value);
+              target.style.cssText = source.style.cssText;
             } else {
               // Generic merge for other object props if needed
               Object.assign(target[attr.name] || {}, value);
