@@ -16,8 +16,10 @@ export class Router {
       onRouteError: null,
       onRouteNotFound: null,
     };
+  }
 
-    const modules = import.meta.glob("@pages/**/page.jsx");
+  async init() {
+    const modules = (await import("./routes.js")).modules;
 
     Object.keys(modules).forEach((path) => {
       let routePath = path
