@@ -61,7 +61,6 @@ export class App extends WebMVCComponent {
 
   update(changes, model) {
     console.log(`App.update(): changes:`, changes);
-    console.log(`App.update() allRefs: `, this.allRefs);
 
     try {
       /*
@@ -80,7 +79,9 @@ export class App extends WebMVCComponent {
       //this.childComponents["counter-input"].refs.counterInput.value = Number(model.counter);
       //this.childComponents["name-input"].refs.nameInput.value = model.name; // Update name input value directly
       //this.childComponents["email-input"].refs.emailInput.value = model.email; // Update email input value directly
-      this.refs.ageInput.value = model.age; // Update age input value directly
+      if (model.age !== undefined) {
+        this.refs.ageInput.value = model.age; // Update age input value directly
+      }
       this.refs.activeCheckbox.checked = model.isActive; // Update active checkbox directly
 
       this.updateUserPreview(); // Update user preview with new values
