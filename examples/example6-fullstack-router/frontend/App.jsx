@@ -11,7 +11,7 @@ export default class App extends WebMVCComponent {
     this.state = new WebMVCModel();
     this.router = new WebMVCRouter();
 
-    this.state.currentComponent = new HomePage();
+    this.state.currentRoute = new HomePage();
     this.state.isLoading = false;
 
     //this.setupRouterCallbacks();
@@ -26,7 +26,7 @@ export default class App extends WebMVCComponent {
     this.router.setCallback("onRouteError", (path, parms, error) => {
       console.error(`Route error for ${path}, parms: ${parms}:`, error);
       this.state.isLoading = false;
-      this.state.currentComponent = new ErrorComponent({ error: error, handleClick: () => this.router.navigate("/") });
+      this.state.currentRoute = new ErrorComponent({ error: error, handleClick: () => this.router.navigate("/") });
     });
   }
 
@@ -50,7 +50,7 @@ export default class App extends WebMVCComponent {
               <p>Loading route...</p>
               {/* You could add a fancy spinner here */}
             </div>
-          ) : this.state.currentComponent ? (
+          ) : this.state.currentRoute ? (
             <div ref="childPages"></div>
           ) : (
             <div>No route loaded</div>
