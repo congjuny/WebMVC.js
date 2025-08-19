@@ -36,7 +36,9 @@ export function createElement(vnode, parentElement = null) {
       }
       //h.currentComponent.childComponents.push(instance);
       if (props.id) {
-        h.currentComponent.childComponents[props.id] = instance;
+        if (!h.currentComponent.childComponents[props.id]) {
+          h.currentComponent.childComponents[props.id] = instance;
+        }
       }
 
       instance.parent = h.currentComponent;
@@ -60,8 +62,10 @@ export function createElement(vnode, parentElement = null) {
       if (key === "ref") {
         if (typeof value === "string" && h.currentComponent) {
           // store ref in the current component
-          h.currentComponent.refs[value] = el;
-          console.log(`Stored ref ${value} in ${h.currentComponent.constructor.name}`);
+          if (!h.currentComponent.refs[value]) {
+            h.currentComponent.refs[value] = el;
+            console.log(`Stored ref ${value} in ${h.currentComponent.constructor.name}`);
+          }
         }
       } else if (key.startsWith("on") && typeof value === "function") {
         const eventName = key.slice(2).toLowerCase();
