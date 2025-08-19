@@ -49,7 +49,8 @@ export function getLogger(name = null) {
   function log(method, level, prefix, args) {
     if (shouldLog(level)) {
       const timestamp = new Date().toISOString();
-      console[method](`${timestamp} [${prefix}] ${name} -`, ...args);
+      // console[method](`${timestamp} [${prefix}] ${name} -`, ...args);
+      console[method](`${timestamp} [${prefix}] -`, ...args);
     }
   }
 

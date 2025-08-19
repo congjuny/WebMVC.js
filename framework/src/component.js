@@ -6,13 +6,16 @@ import { getLogger, LogLevel } from "./logger.js";
 
 const log = getLogger();
 log.setLogLevel(LogLevel.DEBUG);
+let creatingNewElement = false;
 
 export class WebMVCComponent {
   constructor(props = {}) {
     this.props = props;
     this.model = props.model;
-    this.childComponents = null; // Track child components
-    this.refs = {}; // references to child DOM elements
+    this.componentId = props.id || null; // optional id for the component
+    this.parentComponent = null; // Track parent component
+    this.childComponents = new Map(); // Track child components
+    this.refs = new Map(); // references to child DOM elements
     this.element = null; // Track own root DOM element
     this.parentElement = null; // parent element
   }
@@ -22,11 +25,11 @@ export class WebMVCComponent {
     throw new Error("render() method must be implemented");
   }
 
-  createDom(argParentElement) {
-    const vdom = this.render(); // Virtual DOM node from JSX -> h() -> actual element
+  createDom(argOwnerComponent, argParentElement) {
+    const vdom = this.render(); // Virtual DOM node from JSX -> h()
     log.debug("createDom() vdom:", vdom);
 
-    const dom = createElement(vdom, argParentElement);
+    const dom = createElement(vdom, argOwnerComponent, argParentElement);
 
     this.element = dom; // Track own root DOM element
     this.parentElement = argParentElement;
@@ -37,21 +40,20 @@ export class WebMVCComponent {
   }
 
   mount(container) {
-    log.debug("🚀 Mounting component:", this.constructor.name);
+    log.debug("Mounting component:", this.constructor.name);
 
-    // Set up ref context and component tracking
-    h.currentComponent = this;
-
-    this.createDom(container);
-
-    h.currentComponent = null;
+    creatingNewElement = true;
+    this.createDom(this, container);
+    creatingNewElement = false;
 
     container.replaceChildren(this.element);
 
     // Call afterMount on all components
     this.callAfterMount();
 
-    log.debug(`${this.constructor.name} mount() element=`, this.element);
+    //log.debug(`${this.constructor.name} mount() element=`, this.element);
+    logComponent(this);
+
     return this;
   }
 
@@ -59,15 +61,15 @@ export class WebMVCComponent {
     if (typeof this.afterMount === "function") {
       this.afterMount();
     }
-    if (this.childComponents) {
-      this.childComponents.forEach((child) => child.callAfterMount());
+
+    for (const [key, value] of this.childComponents) {
+      value.callAfterMount();
     }
   }
 
   unmount() {
-    if (this.componentId) {
-      globalRefRegistry.delete(this.componentId);
-    }
+    this.refs = new Map();
+    this.childComponents = new Map();
 
     if (this.element && this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
@@ -77,28 +79,23 @@ export class WebMVCComponent {
   // Update method called by the model listener
   // This is where the component should re-render based on model changes
   update(changes, model) {
-    //console.log(`${this.constructor.name} update() called - ${changes}, model: ${model}`);
+    log.debug(`${this.constructor.name} update() called - ${changes}, model: ${model}`);
 
     if (!this.element || !this.parentElement) {
       return;
     }
+
     log.debug(`${this.constructor.name} update() element:`, this.element.innerHTML);
 
     const oldEl = this.element;
 
-    // Set up ref context and component tracking
-    h.currentComponent = this;
-
     // complete replace or merge.
-    // TO DO: check refs handling with merge approach
-    //const dom = this.createDom(this.parentElement);
-    //this.parentElement.replaceChild(dom, oldEl);
+    // const dom = this.createDom(this.parentElement);
+    // this.parentElement.replaceChild(dom, oldEl);
 
     const vdom = this.render(); // Virtual DOM node from JSX -> h() -> actual element
-    const dom2 = createElement(vdom, this.parentElement);
-    mergeDOMElements(oldEl, dom2);
-
-    h.currentComponent = null;
+    const dom2 = createElement(vdom, this, this.parentElement);
+    mergeDOMElements(this, oldEl, dom2);
 
     log.debug("Old Element: ", oldEl.innerHTML);
   }
@@ -107,22 +104,169 @@ export class WebMVCComponent {
 ////////////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ////////////////////////////////////////////////////////////////////////////////////
-function mergeDOMElements(target, source) {
+const svgTags = new Set([
+  "svg",
+  "circle",
+  "rect",
+  "line",
+  "path",
+  "ellipse",
+  "polygon",
+  "polyline",
+  "text",
+  "g",
+  "defs",
+  "use",
+  "foreignObject",
+]);
+
+function createElement(vnode, ownerComponent, parentElement = null) {
+  if (vnode == null || vnode === false) return null;
+
+  // Text nodes (string or number)
+  if (typeof vnode === "string" || typeof vnode === "number") {
+    return document.createTextNode(String(vnode));
+  }
+
+  const { tag, props, children } = vnode;
+
+  if (tag === Fragment) {
+    const frag = document.createDocumentFragment();
+    for (const child of children) {
+      const node = createElement(child, ownerComponent, frag);
+      if (node) frag.appendChild(node);
+    }
+    return frag;
+  }
+
+  if (typeof tag === "function") {
+    const instance = new tag({ ...props, children: children });
+
+    instance.parentComponent = ownerComponent;
+    if (props.id) {
+      instance.componentId = props.id;
+      if (instance.parentComponent) {
+        if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
+          log.warn(`Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`);
+        }
+
+        // store this child component in the parent component
+        instance.parentComponent.childComponents[props.id] = instance;
+      }
+    }
+
+    const dom = instance.createDom(instance, parentElement);
+    dom.__ownerComponent = instance;
+
+    return dom;
+  }
+
+  // create regular HTML element
+  let el = null;
+  if (svgTags.has(tag) || (parentElement && parentElement.__namespace === "svg")) {
+    el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    el.__namespace = "svg";
+  } else {
+    el = document.createElement(tag);
+  }
+
+  if (props) {
+    Object.entries(props).forEach(([key, value]) => {
+      if (key === "ref") {
+        if (typeof value === "string") {
+          el.__ref = value;
+
+          // store ref in the owner component
+          //if (ownerComponent && !ownerComponent.refs[value]) {
+          if (ownerComponent) {
+            if (creatingNewElement && ownerComponent.refs[value]) {
+              log.warn(`Ref ${value} already exists in ${ownerComponent.constructor.name}, overwriting`);
+            }
+            ownerComponent.refs[value] = el;
+            log.debug(`storing ref ${value} in ${ownerComponent.constructor.name}`);
+          }
+        }
+      } else if (key.startsWith("on") && typeof value === "function") {
+        const eventName = key.slice(2).toLowerCase();
+        el.addEventListener(eventName, value);
+      } else if (value !== null && value !== undefined) {
+        if (typeof value === "object") {
+          // Handle object values (e.g., style) using {{}} syntax
+          const str = Object.entries(value)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join("; ");
+          el.setAttribute(key, str);
+        } else {
+          if (key === "className") {
+            el.setAttribute("class", value);
+          } else {
+            el.setAttribute(key, value);
+          }
+        }
+      }
+    });
+  }
+
+  for (const child of normalizeChildren(children)) {
+    const node = createElement(child, ownerComponent, el);
+    if (node) {
+      el.appendChild(node);
+    }
+  }
+
+  return el;
+}
+
+function normalizeChildren(children) {
+  if (children == null || children === false) {
+    return [];
+  }
+
+  // Flatten arbitrarily nested arrays but preserve child structure
+  const out = [];
+
+  function recurse(c) {
+    if (Array.isArray(c)) {
+      for (const i of c) recurse(i);
+    } else {
+      out.push(c);
+    }
+  }
+
+  recurse(children);
+  return out;
+}
+
+function logComponent(component) {
+  log.debug(`logComponent - ${component.constructor.name} refs:`, component.refs);
+  log.debug(`logComponent - ${component.constructor.name} children:`, component.childComponents);
+
+  for (const [key, value] of Object.entries(component.childComponents)) {
+    log.debug(`Child component [${key}]:`, value);
+    logComponent(value);
+  }
+}
+
+function mergeDOMElements(ownerComponent, target, source) {
   if (!target || !source) {
     log.debug("Error: Invalid target or source element");
     return;
   }
 
   // Step 1: Merge attributes
-  mergeAttributes(target, source);
+  mergeAttributes(ownerComponent, target, source);
 
   // Step 2: Merge children
-  mergeChildren(target, source);
+  mergeChildren(ownerComponent, target, source);
 }
 
-function mergeAttributes(target, source) {
+function mergeAttributes(ownerComponent, target, source) {
   if (!target || !source || target.nodeType !== Node.ELEMENT_NODE || source.nodeType !== Node.ELEMENT_NODE) {
     return;
+  }
+
+  if (target.__ref && ownerComponent) {
+    ownerComponent.refs[target.__ref] = target;
   }
 
   // Copy all attributes from source to target
@@ -161,7 +305,7 @@ function mergeAttributes(target, source) {
   }
 }
 
-function mergeChildren(target, source) {
+function mergeChildren(ownerComponent, target, source) {
   if (!target || !source) {
     return;
   }
@@ -177,10 +321,8 @@ function mergeChildren(target, source) {
 
     if (targetIndex >= targetChildren.length) {
       // Add remaining source children
-      //const cloned = sourceChild.cloneNode(true);
-
+      addRefsFromSubtree(sourceChild, ownerComponent);
       target.appendChild(sourceChild);
-      //installEventHandlers(cloned);
 
       log.debug(`Added new ${sourceChild.nodeType === 1 ? sourceChild.tagName : "text"} node`);
       sourceIndex++;
@@ -199,44 +341,97 @@ function mergeChildren(target, source) {
         }
       } else if (targetChild.nodeType === Node.ELEMENT_NODE) {
         // Recursively merge element
-        log.debug(`Merging ${targetChild.tagName} element`);
-        mergeDOMElements(targetChild, sourceChild);
+        log.debug(`Merging ${ownerComponent.constructor.name} ${targetChild.tagName} element`);
+        if (targetChild.__ownerComponent) {
+          // this child node belong to a child component of the current owner component
+          // record this child component with the current owner
+          if (targetChild.__ownerComponent.componentId) {
+            ownerComponent.childComponents[targetChild.__ownerComponent.componentId] = targetChild.__ownerComponent;
+          }
+          mergeDOMElements(targetChild.__ownerComponent, targetChild, sourceChild);
+        } else {
+          mergeDOMElements(ownerComponent, targetChild, sourceChild);
+        }
+        targetIndex++;
+        sourceIndex++;
+      } else {
+        // Replace target child with source child
+        removeRefsFromSubtree(targetChild, ownerComponent);
+        addRefsFromSubtree(sourceChild, ownerComponent);
+        target.replaceChild(sourceChild, targetChild);
+        log.debug(
+          `Replaced ${targetChild.nodeType === 1 ? targetChild.tagName : "text"} with ${
+            sourceChild.nodeType === 1 ? sourceChild.tagName : "text"
+          }`
+        );
+        targetIndex++;
+        sourceIndex++;
+      }
+    }
+
+    // Remove any remaining target children
+    while (targetIndex < targetChildren.length) {
+      const childToRemove = targetChildren[targetIndex];
+      if (childToRemove && childToRemove.parentNode === target) {
+        removeRefsFromSubtree(childToRemove, ownerComponent);
+        target.removeChild(childToRemove);
+        log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
       }
       targetIndex++;
-      sourceIndex++;
-    } else {
-      // Replace target child with source child
-      const cloned = sourceChild.cloneNode(true);
-      target.replaceChild(cloned, targetChild);
-      log.debug(
-        `Replaced ${targetChild.nodeType === 1 ? targetChild.tagName : "text"} with ${
-          sourceChild.nodeType === 1 ? sourceChild.tagName : "text"
-        }`
-      );
-      targetIndex++;
-      sourceIndex++;
     }
-  }
-
-  // Remove any remaining target children
-  while (targetIndex < targetChildren.length) {
-    const childToRemove = targetChildren[targetIndex];
-    if (childToRemove && childToRemove.parentNode === target) {
-      target.removeChild(childToRemove);
-      log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
-    }
-    targetIndex++;
   }
 }
 
 function canMergeNodes(targetNode, sourceNode) {
-  if (targetNode.nodeType !== sourceNode.nodeType) return false;
+  if (targetNode.nodeType !== sourceNode.nodeType) {
+    return false;
+  }
 
   if (targetNode.nodeType === Node.ELEMENT_NODE) {
     return targetNode.tagName.toLowerCase() === sourceNode.tagName.toLowerCase();
   }
 
   return true; // For text nodes, we can always merge
+}
+
+function removeRefsFromSubtree(element, component) {
+  if (!element || !component) {
+    return;
+  }
+
+  log.debug(`removeRefsFromSubtree() element:`, element);
+
+  if (element.__ref && component.refs[element.__ref]) {
+    delete component.refs[element.__ref];
+    log.debug(`Removed ref ${element.__ref} from component ${component.constructor.name}`);
+  }
+
+  for (let child of element.children || []) {
+    if (child.__ownerComponent && child.__ownerComponent !== component) {
+      // child belongs to a descendent component, do not touch it
+      continue;
+    }
+    removeRefsFromSubtree(child, component);
+  }
+}
+
+function addRefsFromSubtree(element, component) {
+  if (!element || !component) {
+    return;
+  }
+
+  if (element.__ref) {
+    component.refs[element.__ref] = element;
+    log.debug(`Added ref ${element.__ref} to component ${component.constructor.name}`);
+  }
+
+  for (let child of element.children || []) {
+    if (child.__ownerComponent && child.__ownerComponent !== component) {
+      // child belongs to a descendent component, do not touch it
+      continue;
+    }
+    addRefsFromSubtree(child, component);
+  }
 }
 
 function installEventHandlers(element) {
@@ -264,115 +459,4 @@ function installEventHandlers(element) {
   for (const child of element.children) {
     installEventHandlers(child);
   }
-}
-
-function createElement(vnode, parentElement = null) {
-  if (vnode == null || vnode === false) return null;
-
-  // Text nodes (string or number)
-  if (typeof vnode === "string" || typeof vnode === "number") {
-    return document.createTextNode(String(vnode));
-  }
-
-  const { tag, props, children } = vnode;
-
-  if (tag === Fragment) {
-    const frag = document.createDocumentFragment();
-    for (const child of children) {
-      const node = createElement(child, frag);
-      if (node) frag.appendChild(node);
-    }
-    return frag;
-  }
-
-  if (typeof tag === "function") {
-    const instance = new tag({ ...props, children: children });
-
-    // Track parent-child relationship
-    if (h.currentComponent) {
-      if (!h.currentComponent.childComponents) {
-        h.currentComponent.childComponents = [];
-      }
-      //h.currentComponent.childComponents.push(instance);
-      if (props.id) {
-        if (!h.currentComponent.childComponents[props.id]) {
-          h.currentComponent.childComponents[props.id] = instance;
-        }
-      }
-
-      instance.parent = h.currentComponent;
-    }
-
-    // Set component as current and render
-    const previousComponent = h.currentComponent;
-    h.currentComponent = instance;
-
-    const dom = instance.createDom(parentElement);
-
-    h.currentComponent = previousComponent;
-
-    return dom;
-  }
-
-  const el = document.createElement(tag);
-
-  if (props) {
-    Object.entries(props).forEach(([key, value]) => {
-      if (key === "ref") {
-        if (typeof value === "string" && h.currentComponent) {
-          // store ref in the current component
-          if (!h.currentComponent.refs[value]) {
-            h.currentComponent.refs[value] = el;
-            console.log(`Stored ref ${value} in ${h.currentComponent.constructor.name}`);
-          }
-        }
-      } else if (key.startsWith("on") && typeof value === "function") {
-        const eventName = key.slice(2).toLowerCase();
-        el.addEventListener(eventName, value);
-      } else if (value !== null && value !== undefined) {
-        if (typeof value === "object") {
-          // Handle object values (e.g., style) using {{}} syntax
-          const str = Object.entries(value)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join("; ");
-          el.setAttribute(key, str);
-        } else {
-          if (key === "className") {
-            el.setAttribute("class", value);
-          } else {
-            el.setAttribute(key, value);
-          }
-        }
-      }
-    });
-  }
-
-  for (const child of normalizeChildren(children)) {
-    const node = createElement(child, el);
-    if (node) {
-      el.appendChild(node);
-    }
-  }
-
-  return el;
-}
-
-function normalizeChildren(children) {
-  if (children == null || children === false) {
-    return [];
-  }
-
-  // Flatten arbitrarily nested arrays but preserve child structure
-  const out = [];
-
-  function recurse(c) {
-    if (Array.isArray(c)) {
-      for (const i of c) recurse(i);
-    } else {
-      out.push(c);
-    }
-  }
-
-  recurse(children);
-  return out;
 }
