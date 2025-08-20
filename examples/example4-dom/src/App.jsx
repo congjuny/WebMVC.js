@@ -14,7 +14,7 @@ export class App extends WebMVCComponent {
     console.log("App render() called");
     return (
       <div>
-        <CounterDisplay model={this.model}>
+        <CounterDisplay model={this.model} id="counter-display">
           <p ref="ref1">Child of CounterDisplay</p>
         </CounterDisplay>
         <div style="display: flex; gap: 1em;">
