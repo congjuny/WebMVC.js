@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Congjun Yang
 // framework/component.js
 
-import { Fragment, h } from "./h.js";
+import { Fragment } from "./h.js";
 import { getLogger, LogLevel } from "./logger.js";
 
 const log = getLogger();
@@ -27,7 +27,7 @@ export class WebMVCComponent {
 
   createDom(argOwnerComponent, argParentElement) {
     const vdom = this.render(); // Virtual DOM node from JSX -> h()
-    log.debug("createDom() vdom:", vdom);
+    log.debug("createDom() vdom:", this, vdom);
 
     const dom = createElement(vdom, argOwnerComponent, argParentElement);
 
@@ -79,7 +79,7 @@ export class WebMVCComponent {
   // Update method called by the model listener
   // This is where the component should re-render based on model changes
   update(changes, model) {
-    log.debug(`${this.constructor.name} update() called - ${changes}, model: ${model}`);
+    log.debug(`${this.constructor.name} update() called - \nchanges:`, changes, "\nmodel:", model);
 
     if (!this.element || !this.parentElement) {
       return;
@@ -97,7 +97,8 @@ export class WebMVCComponent {
     const dom2 = createElement(vdom, this, this.parentElement);
     mergeDOMElements(this, oldEl, dom2);
 
-    log.debug("Old Element: ", oldEl.innerHTML);
+    //log.debug("Old Element: ", oldEl.innerHTML);
+    logComponent(this);
   }
 }
 
@@ -147,7 +148,9 @@ function createElement(vnode, ownerComponent, parentElement = null) {
       instance.componentId = props.id;
       if (instance.parentComponent) {
         if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
-          log.warn(`Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`);
+          log.warn(
+            `Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`
+          );
         }
 
         // store this child component in the parent component
@@ -156,7 +159,9 @@ function createElement(vnode, ownerComponent, parentElement = null) {
     }
 
     const dom = instance.createDom(instance, parentElement);
-    dom.__ownerComponent = instance;
+    if (dom) {
+      dom.__ownerComponent = instance; // link the DOM element to the component instance
+    }
 
     return dom;
   }
@@ -352,8 +357,6 @@ function mergeChildren(ownerComponent, target, source) {
         } else {
           mergeDOMElements(ownerComponent, targetChild, sourceChild);
         }
-        targetIndex++;
-        sourceIndex++;
       } else {
         // Replace target child with source child
         removeRefsFromSubtree(targetChild, ownerComponent);
@@ -364,21 +367,21 @@ function mergeChildren(ownerComponent, target, source) {
             sourceChild.nodeType === 1 ? sourceChild.tagName : "text"
           }`
         );
-        targetIndex++;
-        sourceIndex++;
-      }
-    }
-
-    // Remove any remaining target children
-    while (targetIndex < targetChildren.length) {
-      const childToRemove = targetChildren[targetIndex];
-      if (childToRemove && childToRemove.parentNode === target) {
-        removeRefsFromSubtree(childToRemove, ownerComponent);
-        target.removeChild(childToRemove);
-        log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
       }
       targetIndex++;
+      sourceIndex++;
     }
+  }
+
+  // Remove any remaining target children
+  while (targetIndex < targetChildren.length) {
+    const childToRemove = targetChildren[targetIndex];
+    if (childToRemove && childToRemove.parentNode === target) {
+      removeRefsFromSubtree(childToRemove, ownerComponent);
+      target.removeChild(childToRemove);
+      log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
+    }
+    targetIndex++;
   }
 }
 
