@@ -1,45 +1,21 @@
-import { WebMVCComponent, WebMVCCollection } from "web-mvc-js";
+import { WebMVCComponent, WebMVCCollection, WebMVCModel } from "web-mvc-js";
 import { EmployeeListView } from "./EmployeeListView";
 import { EmployeeForm } from "./EmployeeForm";
 import { EmployeeModel } from "./EmployeeModel";
 
+let count = 0;
 export class App extends WebMVCComponent {
   constructor() {
     super();
-    this.employeeList = new WebMVCCollection(EmployeeModel, []);
-    this.employeeList.loading = false;
 
-    this.loadEmployees();
+    this.employeeList = new WebMVCCollection(EmployeeModel, []);
   }
 
-  loadEmployees = () => {
-    this.employeeList.loading = true;
-    fetch("/api/employees")
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Failed to fetch employees");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        console.log("Employees:", data);
+  update(changes, model) {
+    super.update(changes, model);
 
-        if (Array.isArray(data)) {
-          data.forEach((employee) => {
-            this.employeeList.add(employee);
-          });
-        } else {
-          console.warn("Expected an array of employees, but got:", data);
-        }
-        this.employeeList.loading = false;
-      })
-      .catch((err) => {
-        console.error("Error:", err);
-        this.employeeList.loading = false;
-      });
-
-    console.log("After loading sample data, employeeList =", this.employeeList);
-  };
+    console.log("App.update() refs=", this.refs);
+  }
 
   addEmployee = (data) => {
     console.log("Adding employee with data:", JSON.stringify(data));
