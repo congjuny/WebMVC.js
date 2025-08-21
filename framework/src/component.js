@@ -14,8 +14,8 @@ export class WebMVCComponent {
     this.model = props.model;
     this.componentId = props.id || null; // optional id for the component
     this.parentComponent = null; // Track parent component
-    this.childComponents = new Map(); // Track child components
-    this.refs = new Map(); // references to child DOM elements
+    this.childComponents = {}; // Track child components
+    this.refs = {}; // references to child DOM elements
     this.element = null; // Track own root DOM element
     this.parentElement = null; // parent element
   }
@@ -59,17 +59,18 @@ export class WebMVCComponent {
 
   callAfterMount() {
     if (typeof this.afterMount === "function") {
-      this.afterMount();
+      // append to the Macrotasks queue
+      setTimeout(() => this.afterMount(), 0);
     }
 
-    for (const [key, value] of this.childComponents) {
+    for (const [key, value] of Object.entries(this.childComponents)) {
       value.callAfterMount();
     }
   }
 
   unmount() {
-    this.refs = new Map();
-    this.childComponents = new Map();
+    this.refs = {};
+    this.childComponents = {};
 
     if (this.element && this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
@@ -90,7 +91,7 @@ export class WebMVCComponent {
     const oldEl = this.element;
 
     // complete replace or merge.
-    // const dom = this.createDom(this.parentElement);
+    // const dom = this.createDom(this, this.parentElement);
     // this.parentElement.replaceChild(dom, oldEl);
 
     const vdom = this.render(); // Virtual DOM node from JSX -> h() -> actual element
@@ -148,9 +149,7 @@ function createElement(vnode, ownerComponent, parentElement = null) {
       instance.componentId = props.id;
       if (instance.parentComponent) {
         if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
-          log.warn(
-            `Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`
-          );
+          log.warn(`Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`);
         }
 
         // store this child component in the parent component
@@ -160,7 +159,8 @@ function createElement(vnode, ownerComponent, parentElement = null) {
 
     const dom = instance.createDom(instance, parentElement);
     if (dom) {
-      dom.__ownerComponent = instance; // link the DOM element to the component instance
+      // save a reference to the owner component with the root element
+      dom.__ownerComponent = instance;
     }
 
     return dom;
@@ -182,7 +182,6 @@ function createElement(vnode, ownerComponent, parentElement = null) {
           el.__ref = value;
 
           // store ref in the owner component
-          //if (ownerComponent && !ownerComponent.refs[value]) {
           if (ownerComponent) {
             if (creatingNewElement && ownerComponent.refs[value]) {
               log.warn(`Ref ${value} already exists in ${ownerComponent.constructor.name}, overwriting`);
@@ -258,20 +257,27 @@ function mergeDOMElements(ownerComponent, target, source) {
     return;
   }
 
-  // Step 1: Merge attributes
-  mergeAttributes(ownerComponent, target, source);
-
-  // Step 2: Merge children
-  mergeChildren(ownerComponent, target, source);
+  if (!canMergeNodes(target, source)) {
+    removeRefsFromSubtree(target, ownerComponent);
+    addRefsFromSubtree(source, ownerComponent);
+    ownerComponent.parentElement.replaceChild(source, target);
+  } else {
+    mergeAttributes(ownerComponent, target, source);
+    mergeChildren(ownerComponent, target, source);
+  }
 }
 
 function mergeAttributes(ownerComponent, target, source) {
-  if (!target || !source || target.nodeType !== Node.ELEMENT_NODE || source.nodeType !== Node.ELEMENT_NODE) {
+  if (!target || !source) {
     return;
   }
 
-  if (target.__ref && ownerComponent) {
-    ownerComponent.refs[target.__ref] = target;
+  if (ownerComponent) {
+    if (target.__ref) {
+      ownerComponent.refs[target.__ref] = target;
+    } else if (source.__ref) {
+      ownerComponent.refs[source.__ref] = target;
+    }
   }
 
   // Copy all attributes from source to target
@@ -303,7 +309,7 @@ function mergeAttributes(ownerComponent, target, source) {
 
   // Remove attributes that don't exist in source (except id and class for demo)
   for (let attr of [...target.attributes]) {
-    if (attr.name !== "id" && attr.name !== "class" && !source.hasAttribute(attr.name)) {
+    if (!source.hasAttribute(attr.name)) {
       log.debug(`Removed attribute: ${attr.name}`);
       target.removeAttribute(attr.name);
     }
@@ -348,7 +354,7 @@ function mergeChildren(ownerComponent, target, source) {
         // Recursively merge element
         log.debug(`Merging ${ownerComponent.constructor.name} ${targetChild.tagName} element`);
         if (targetChild.__ownerComponent) {
-          // this child node belong to a child component of the current owner component
+          // this child node is the root element of a child component of the current owner component
           // record this child component with the current owner
           if (targetChild.__ownerComponent.componentId) {
             ownerComponent.childComponents[targetChild.__ownerComponent.componentId] = targetChild.__ownerComponent;
@@ -363,14 +369,23 @@ function mergeChildren(ownerComponent, target, source) {
         addRefsFromSubtree(sourceChild, ownerComponent);
         target.replaceChild(sourceChild, targetChild);
         log.debug(
-          `Replaced ${targetChild.nodeType === 1 ? targetChild.tagName : "text"} with ${
-            sourceChild.nodeType === 1 ? sourceChild.tagName : "text"
-          }`
+          `Replaced ${targetChild.nodeType === 1 ? targetChild.tagName : "text"} with `,
+          `${sourceChild.nodeType === 1 ? sourceChild.tagName : "text"}`
         );
       }
-      targetIndex++;
-      sourceIndex++;
+    } else {
+      // Replace target child with source child
+      removeRefsFromSubtree(targetChild, ownerComponent);
+      addRefsFromSubtree(sourceChild, ownerComponent);
+      target.replaceChild(sourceChild, targetChild);
+      log.debug(
+        `Replaced ${targetChild.nodeType === 1 ? targetChild.tagName : "text"} with `,
+        `${sourceChild.nodeType === 1 ? sourceChild.tagName : "text"}`
+      );
     }
+
+    targetIndex++;
+    sourceIndex++;
   }
 
   // Remove any remaining target children
@@ -409,6 +424,15 @@ function removeRefsFromSubtree(element, component) {
     log.debug(`Removed ref ${element.__ref} from component ${component.constructor.name}`);
   }
 
+  if (
+    element.__ownerComponent &&
+    element.__ownerComponent.componentId &&
+    element.__ownerComponent.parentComponent === component
+  ) {
+    delete component.childComponents[element.__ownerComponent.componentId];
+    log.debug(`Removed child component ${element.__ownerComponent.componentId} `, `from component ${component.constructor.name}`);
+  }
+
   for (let child of element.children || []) {
     if (child.__ownerComponent && child.__ownerComponent !== component) {
       // child belongs to a descendent component, do not touch it
@@ -426,6 +450,15 @@ function addRefsFromSubtree(element, component) {
   if (element.__ref) {
     component.refs[element.__ref] = element;
     log.debug(`Added ref ${element.__ref} to component ${component.constructor.name}`);
+  }
+
+  if (element.__ownerComponent && element.__ownerComponent.parentComponent === component) {
+    if (element.__ownerComponent.componentId) {
+      component.childComponents[element.__ownerComponent.componentId] = element.__ownerComponent;
+      log.debug(`Added child component ${element.__ownerComponent.componentId} `, `to component ${component.constructor.name}`);
+    } else {
+      console.error(`componentId missing: ${element.__ownerComponent.constructor.name}`);
+    }
   }
 
   for (let child of element.children || []) {

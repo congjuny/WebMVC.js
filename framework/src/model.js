@@ -187,7 +187,8 @@ export class WebMVCModel {
     // Notify global listeners
     this._listeners.forEach((listener) => {
       try {
-        listener(changes, this);
+        // append the listener to the Macrotask queue
+        setTimeout(listener(changes, this), 0);
       } catch (error) {
         console.error("Error in change listener:", error);
       }
@@ -206,7 +207,8 @@ export class WebMVCModel {
         if (this._matchesPattern(change.path, pattern)) {
           listeners.forEach((listener) => {
             try {
-              listener(change, this);
+              // append the listener to the Macrotask queue
+              setTimeout(listener(changes, this), 0);
             } catch (error) {
               console.error("Error in property listener:", error);
             }
