@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from "child_process";
-import { writeFileSync, mkdirSync, readFileSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, readFileSync, existsSync, copyFile, cpSync } from "fs";
 import { join, resolve } from "path";
 import { fileURLToPath } from "url";
 import pc from "picocolors";
@@ -19,6 +19,7 @@ ${pc.yellow("Usage:")}
 ${pc.yellow("Options:")}
   -h, --help     Show this help message
   -v, --version  Show version number
+  --full         Create a full-stack application
   --no-install   Skip npm install
   --no-git       Skip git initialization
 
@@ -64,9 +65,7 @@ function processTemplate(template, replacements) {
   return processed;
 }
 
-function createProject(projectName, options = {}) {
-  const { skipInstall = false, skipGit = false } = options;
-
+function createProject(projectName) {
   console.log(pc.cyan(`\n📦 Creating project: ${projectName}\n`));
 
   // Create project directory
@@ -75,62 +74,77 @@ function createProject(projectName, options = {}) {
 
   const replacements = {
     PROJECT_NAME: projectName,
-    DESCRIPTION: `A Node.js application built with Vite`,
+    DESCRIPTION: `A WebMVC.js application built with Vite`,
+    FRONTEND_ROOT: frontendRoot,
   };
 
   console.log("📝 Creating files...");
 
   // Create package.json
-  const packageTemplate = readTemplate("package.json.template");
-  const packageJson = processTemplate(packageTemplate, replacements);
-  writeFileSync("package.json", packageJson);
+  let origTemplate = readTemplate("package.json.template");
+  let processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("package.json", processedTemplate);
 
   // Create vite.config.js
-  const viteTemplate = readTemplate("vite.config.js.template");
-  writeFileSync("vite.config.js", viteTemplate);
-
-  // Create src directory and index.js
-  mkdirSync("src");
-  const indexTemplate = readTemplate("src/index.js.template");
-  const indexJs = processTemplate(indexTemplate, replacements);
-  writeFileSync("src/index.js", indexJs);
+  origTemplate = readTemplate("vite.config.js.template");
+  processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("vite.config.js", processedTemplate);
 
   // Create .gitignore
-  const gitignoreTemplate = readTemplate("gitignore.template");
-  writeFileSync(".gitignore", gitignoreTemplate);
+  origTemplate = readTemplate("gitignore.template");
+  writeFileSync(".gitignore", origTemplate);
 
   // Create README.md
-  const readmeContent = `# ${projectName}
+  origTemplate = readTemplate("README.md.template");
+  writeFileSync("README.md", origTemplate);
 
-A Node.js application built with Vite.
+  if (fullStack) {
+    mkdirSync("frontend");
+    mkdirSync("backend");
+    process.chdir("frontend");
+  }
 
-## Getting Started
+  origTemplate = readTemplate("index.html.template");
+  processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("index.html", processedTemplate);
 
-\`\`\`bash
-# Install dependencies
-npm install
+  mkdirSync("public");
+  mkdirSync("src");
 
-# Build the application
-npm run build
+  let fileName = join(__dirname, "templates", "public/favicon.ico");
+  copyFile(fileName, "public/favicon.ico", (err) => {
+    if (err) throw err;
+  });
 
-# Start the application
-npm start
+  fileName = join(__dirname, "templates", "style.css.template");
+  copyFile(fileName, "style.css", (err) => {
+    if (err) throw err;
+  });
 
-# Development mode (build + watch)
-npm run dev
-\`\`\`
+  process.chdir("src");
 
-## Scripts
+  fileName = join(__dirname, "templates", "src/App.jsx.template");
+  copyFile(fileName, "App.jsx", (err) => {
+    if (err) throw err;
+  });
 
-- \`npm run build\` - Build the application
-- \`npm run dev\` - Build in watch mode
-- \`npm start\` - Start the built application
-`;
+  fileName = join(__dirname, "templates", "src/pages");
+  cpSync(fileName, "pages", { recursive: true }, (err) => {
+    if (err) throw err;
+  });
 
-  writeFileSync("README.md", readmeContent);
+  fileName = join(__dirname, "templates", "src/components");
+  cpSync(fileName, "components", { recursive: true }, (err) => {
+    if (err) throw err;
+  });
+
+  // Create entry point main.jsx
+  origTemplate = readTemplate("src/main.jsx.template");
+  processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("main.jsx", processedTemplate);
 
   // Initialize git
-  if (!skipGit) {
+  if (initGit) {
     try {
       console.log("🔧 Initializing git repository...");
       execSync("git init", { stdio: "pipe" });
@@ -142,7 +156,7 @@ npm run dev
   }
 
   // Install dependencies
-  if (!skipInstall) {
+  if (install_pkg) {
     console.log("📥 Installing dependencies...");
     try {
       execSync("npm install", { stdio: "inherit" });
@@ -155,11 +169,20 @@ npm run dev
   console.log(pc.green("\n✅ Project created successfully!\n"));
   console.log(pc.cyan("Next steps:"));
   console.log(`  cd ${projectName}`);
-  if (skipInstall) console.log("  npm install");
+  if (!install_pkg) {
+    console.log("  npm install");
+  }
   console.log("  npm run build");
   console.log("  npm start");
   console.log("");
 }
+
+// options and default values
+let projectName = "";
+let fullStack = false;
+let frontendRoot = ".";
+let initGit = false;
+let install_pkg = false;
 
 function main() {
   const args = process.argv.slice(2);
@@ -174,12 +197,14 @@ function main() {
     return;
   }
 
-  const projectName = args.find((arg) => !arg.startsWith("-"));
-  const skipInstall = args.includes("--no-install");
-  const skipGit = args.includes("--no-git");
+  projectName = args.find((arg) => !arg.startsWith("-"));
+  install_pkg = args.includes("--install");
+  initGit = args.includes("--init-git");
+  fullStack = args.includes("--full");
+  frontendRoot = fullStack ? "frontend" : ".";
 
   validateProjectName(projectName);
-  createProject(projectName, { skipInstall, skipGit });
+  createProject(projectName);
 }
 
 main();
