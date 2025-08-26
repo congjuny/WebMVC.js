@@ -18,7 +18,7 @@ export default class Layout extends WebMVCComponent {
         </div>
 
         <footer class="app-footer">
-          <p>&copy; 2025 My SPA. Built with Vite and Dynamic Imports.</p>
+          <p>&copy; 2025 My MVC SPA. Built with Vite and Dynamic Imports.</p>
         </footer>
       </div>
     );

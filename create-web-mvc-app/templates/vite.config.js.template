@@ -15,7 +15,7 @@ export default defineConfig({
   },
 
     build: {
-    outDir: "../dist",
+    outDir: "{{FRONTEND_ROOT}}/dist",
     emptyOutDir: true,
 
     rollupOptions: {

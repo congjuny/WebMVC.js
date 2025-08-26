@@ -96,7 +96,8 @@ function createProject(projectName) {
 
   // Create README.md
   origTemplate = readTemplate("README.md.template");
-  writeFileSync("README.md", origTemplate);
+  processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("README.md", processedTemplate);
 
   if (fullStack) {
     mkdirSync("frontend");

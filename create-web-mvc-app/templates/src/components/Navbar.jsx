@@ -32,7 +32,7 @@ export default class Navbar extends WebMVCComponent {
     return (
       <nav class="navbar">
         <div class="nav-brand">
-          <h2>My SPA</h2>
+          <h2>My MVC SPA</h2>
         </div>
         <ul class="nav-links">
           {this.navItems.map(({ path, label }) => (
