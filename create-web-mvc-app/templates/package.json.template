@@ -3,11 +3,10 @@
   "version": "1.0.0",
   "description": "{{DESCRIPTION}}",
   "type": "module",
-  "main": "dist/main.jsx",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "node dist/main.jsx",
+    "preview": "vite preview",
     "clean": "rm -rf dist"
   },
 

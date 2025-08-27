@@ -18,12 +18,6 @@ export default defineConfig({
     outDir: "{{FRONTEND_ROOT}}/dist",
     emptyOutDir: true,
 
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, "{{FRONTEND_ROOT}}/src/main.jsx"),
-      },
-    },
-
     // Enable source maps to help with debugging
     sourcemap: true,
 
