@@ -1,13 +1,13 @@
 import Navbar from "./components/Navbar.jsx";
 import HomePage from "./pages/page.jsx";
-import { ErrorComponent } from "./components/ErrorComponent.jsx";
+//import { ErrorComponent } from "./components/ErrorComponent.jsx";
+//import { WebMVCRouter } from "../../../framework/src/router.js";
 
 export default class App extends WebMVCComponent {
   constructor() {
     super();
 
     this.state = new WebMVCModel();
-    this.router = new WebMVCRouter();
 
     this.state.currentRoute = new HomePage();
     this.state.isLoading = false;
@@ -15,11 +15,28 @@ export default class App extends WebMVCComponent {
     //this.setupRouterCallbacks();
   }
 
+  /* 
+  // uncomment if needed
   setupRouterCallbacks() {
-    // may be used to check if user logged in
+    // may be used to show a loading progress indicator
     this.router.setCallback("onRouteStart", (path, parms) => {
       console.log(`Starting navigation to: ${path} parms: ${parms}`);
       this.state.isLoading = true;
+    });
+
+    this.router.setCallback("onRouteComplete", (path, parms) => {
+      console.log(`Completed navigation to: ${path} parms: ${parms}`);
+      this.state.isLoading = false;
+    });
+
+    this.router.setCallback("onBeforeRoute", (path, parms) => {
+      console.log(`Before navigation to: ${path} parms: ${parms}`);
+      // Check if user is logged in
+      if (!this.state.isLoggedIn) {
+        console.warn(`User is not logged in. Redirecting to login page.`);
+        this.router.navigate("/login");
+        return false; // Prevent navigation
+      }
     });
 
     this.router.setCallback("onRouteError", (path, parms, error) => {
@@ -28,6 +45,7 @@ export default class App extends WebMVCComponent {
       this.state.currentRoute = new ErrorComponent({ error: error, handleClick: () => this.router.navigate("/") });
     });
   }
+  */
 
   handleNavigation = (path) => {
     this.router.navigate(path);
@@ -42,15 +60,15 @@ export default class App extends WebMVCComponent {
     // vite will find all jsx files and get the default export components as routes
     const modules = import.meta.glob("./pages/**/page.jsx");
 
-    await this.router.init(modules);
-    this.router.install(this.refs["childPages"]);
+    // this.router is a reference to the WebMVCRouter instance
+    await this.router.init(modules, "pages", "/");
   }
 
   render() {
     return (
       <div class="app-layout">
         <header class="app-header">
-          <Navbar onNavigate={this.handleNavigation} onPreload={this.handlePreload} currentPath={this.router.currentRoute} />
+          <Navbar onNavigate={this.handleNavigation} onPreload={this.handlePreload} currentPath={this.state.currentRoute} />
         </header>
 
         <div class="app-body">
@@ -61,7 +79,7 @@ export default class App extends WebMVCComponent {
                 {/* You could add a fancy spinner here */}
               </div>
             ) : this.state.currentRoute ? (
-              <div ref="childPages"></div>
+              <WebMVCRouter />
             ) : (
               <p>No route loaded</p>
             )}
