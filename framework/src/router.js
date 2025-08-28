@@ -18,9 +18,7 @@ export class WebMVCRouter {
     };
   }
 
-  async init() {
-    const modules = (await import("./routes.js")).modules;
-
+  async init(modules) {
     Object.keys(modules).forEach((path) => {
       let routePath = path
         .replace(/^.*\/pages\//, "/")
@@ -99,8 +97,9 @@ export class WebMVCRouter {
       return;
     }
 
+    console.log("checking onBeforeRoute...");
     if (this.callbacks.onBeforeRoute) {
-      const shouldContinue = await this.hooks.onBeforeRoute(path, params);
+      const shouldContinue = await this.callbacks.onBeforeRoute(path, params);
       if (shouldContinue === false) {
         return;
       }
@@ -152,7 +151,7 @@ export class WebMVCRouter {
     }
   }
 
-  mount(container) {
+  install(container) {
     this.container = container;
     this.render();
   }
