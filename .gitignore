@@ -16,6 +16,7 @@ dist-ssr
 *.local
 
 /helper/
+/test/
 
 # Editor directories and files
 .vscode/*

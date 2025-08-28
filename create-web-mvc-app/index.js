@@ -174,8 +174,10 @@ function createProject(projectName) {
     console.log("  npm install");
   }
   console.log("  npm run build");
-  console.log("  npm start");
+  console.log("  npm run dev");
   console.log("");
+  console.log(pc.cyan("To run production build:"));
+  console.log("  npm run preview");
 }
 
 // options and default values
