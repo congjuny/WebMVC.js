@@ -1,13 +1,19 @@
 // Copyright (c) 2025 Congjun Yang
 // framework/src/router.js
+import { WebMVCComponent } from "./component";
+import { getLogger } from "./logger.js";
 
-export class WebMVCRouter {
-  constructor({ rootEl, basePath = "" } = {}) {
+const log = getLogger();
+
+export class WebMVCRouter extends WebMVCComponent {
+  constructor() {
+    super();
     this.routes = [];
-    this.basePath = basePath;
     this.currentPath = window.location.pathname;
-    this.container = rootEl;
     this.currentComponent = null;
+
+    this.element = document.createElement("div");
+    this.element.id = "router";
 
     this.callbacks = {
       onBeforeRoute: null,
@@ -18,10 +24,13 @@ export class WebMVCRouter {
     };
   }
 
-  async init(modules) {
+  async init(modules, basePath = "pages", defaultRoute = "/") {
+    const regex = new RegExp(`^.*\\/${basePath}\\/`);
+    this.routes = [];
+
     Object.keys(modules).forEach((path) => {
       let routePath = path
-        .replace(/^.*\/pages\//, "/")
+        .replace(regex, "/")
         .replace(/\/page\.jsx$/, "")
         .replace(/\[([^\]]+)\]/g, ":$1");
 
@@ -33,8 +42,15 @@ export class WebMVCRouter {
 
     // Listen for browser back/forward
     window.addEventListener("popstate", () => {
-      this.navigate(window.location.pathname, false);
+      const path = window.location.pathname;
+      if (this.matchRoute(path)) {
+        this.navigate(path, false);
+      }
     });
+
+    if (this.matchRoute(defaultRoute)) {
+      this.navigate(defaultRoute);
+    }
   }
 
   setCallback(name, fn) {
@@ -72,14 +88,14 @@ export class WebMVCRouter {
   }
 
   async navigate(path, pushState = true) {
-    console.log("Router.navigate() path:", path);
+    log.debug("Router.navigate() path:", path);
 
     if (pushState && path !== this.currentPath) {
       window.history.pushState({}, "", path);
     }
 
     this.currentPath = path;
-    await this.render();
+    await this.doNavigation();
   }
 
   async preload(path) {
@@ -92,12 +108,12 @@ export class WebMVCRouter {
     match.route.load();
   }
 
-  async render() {
-    if (!this.container) {
+  async doNavigation() {
+    if (!this.parentElement) {
       return;
     }
 
-    console.log("checking onBeforeRoute...");
+    log.debug("checking onBeforeRoute...");
     if (this.callbacks.onBeforeRoute) {
       const shouldContinue = await this.callbacks.onBeforeRoute(path, params);
       if (shouldContinue === false) {
@@ -120,7 +136,7 @@ export class WebMVCRouter {
     }
 
     // Clear container
-    this.container.innerHTML = "";
+    this.element.innerHTML = "";
 
     if (match) {
       // before loading
@@ -132,10 +148,10 @@ export class WebMVCRouter {
       const ComponentClass = module.default;
 
       try {
-        console.log("Router.render() component class:", ComponentClass);
+        log.debug("Router.doNavigation() component class:", ComponentClass);
         this.currentComponent = new ComponentClass(match.params);
 
-        await this.currentComponent.mount(this.container);
+        await this.currentComponent.mount(this.element);
 
         if (this.callbacks.onRouteComplete) {
           this.callbacks.onRouteComplete(path, params);
@@ -147,13 +163,8 @@ export class WebMVCRouter {
         throw new Error("Component mount() must return a DOM element");
       }
     } else {
-      this.container.innerHTML = "<h1>404 - Page Not Found</h1>";
+      this.element.innerHTML = "<h1>404 - Page Not Found</h1>";
     }
-  }
-
-  install(container) {
-    this.container = container;
-    this.render();
   }
 
   // Cleanup method
@@ -162,5 +173,9 @@ export class WebMVCRouter {
       this.currentComponent.unmount();
     }
     window.removeEventListener("popstate", this.navigate);
+  }
+
+  render() {
+    return this.element;
   }
 }

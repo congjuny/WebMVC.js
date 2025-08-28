@@ -156,6 +156,9 @@ function createElement(vnode, ownerComponent, parentElement = null) {
         instance.parentComponent.childComponents[props.id] = instance;
       }
     }
+    if (instance.constructor.name === "WebMVCRouter" && instance.parentComponent) {
+      instance.parentComponent.router = instance;
+    }
 
     const dom = instance.createDom(instance, parentElement);
     if (dom) {
