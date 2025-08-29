@@ -20,12 +20,12 @@ ${pc.yellow("Options:")}
   -h, --help     Show this help message
   -v, --version  Show version number
   --full         Create a full-stack application
-  --no-install   Skip npm install
-  --no-git       Skip git initialization
+  --install      Run npm install
+  --init-git     Initialize a git repository
 
 ${pc.yellow("Examples:")}
   npx create-web-mvc-app my-app
-  npx create-web-mvc-app my-app --no-install
+  npx create-web-mvc-app my-app --install --init-git
 `);
 }
 
@@ -80,14 +80,9 @@ function createProject(projectName) {
 
   console.log("📝 Creating files...");
 
-  // Create package.json
-  let origTemplate = readTemplate("package.json.template");
-  let processedTemplate = processTemplate(origTemplate, replacements);
-  writeFileSync("package.json", processedTemplate);
-
   // Create vite.config.js
-  origTemplate = readTemplate("vite.config.js.template");
-  processedTemplate = processTemplate(origTemplate, replacements);
+  let origTemplate = readTemplate("vite.config.js.template");
+  let processedTemplate = processTemplate(origTemplate, replacements);
   writeFileSync("vite.config.js", processedTemplate);
 
   // Create .gitignore
@@ -99,9 +94,33 @@ function createProject(projectName) {
   processedTemplate = processTemplate(origTemplate, replacements);
   writeFileSync("README.md", processedTemplate);
 
+  // Create package.json
   if (fullStack) {
+    origTemplate = readTemplate("package-fullstack.json.template");
+  } else {
+    origTemplate = readTemplate("package.json.template");
+  }
+  processedTemplate = processTemplate(origTemplate, replacements);
+  writeFileSync("package.json", processedTemplate);
+
+  let fileName;
+  if (fullStack) {
+    fileName = join(__dirname, "templates", "backend");
+    cpSync(fileName, "backend", { recursive: true }, (err) => {
+      if (err) throw err;
+    });
+
+    fileName = join(__dirname, "templates", "server.js.template");
+    copyFile(fileName, "server.js", (err) => {
+      if (err) throw err;
+    });
+
+    fileName = join(__dirname, "templates", "server.prod.js.template");
+    copyFile(fileName, "server.prod.js", (err) => {
+      if (err) throw err;
+    });
+
     mkdirSync("frontend");
-    mkdirSync("backend");
     process.chdir("frontend");
   }
 
@@ -112,7 +131,7 @@ function createProject(projectName) {
   mkdirSync("public");
   mkdirSync("src");
 
-  let fileName = join(__dirname, "templates", "public/favicon.ico");
+  fileName = join(__dirname, "templates", "public/favicon.ico");
   copyFile(fileName, "public/favicon.ico", (err) => {
     if (err) throw err;
   });

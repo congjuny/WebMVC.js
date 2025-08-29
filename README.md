@@ -1,6 +1,6 @@
 <img src="images/WebMVC.svg" alt="WebMVC Logo" width="400" />
 
-A modern JavaScript library for building **Single-Page Applications** (SPA) with a clean **Model–View–Controller** (MVC) architecture. You define the application views with **JSX syntax**. No virtual DOM, just simplicity and speed. No hooks to a global blackbox state machine, you define and control your data model and state. Don't over-engineer. This is Web programming the way it should have been!
+A modern and lightweight JavaScript library for building **Single-Page Applications** (SPA) with a clean **Model–View–Controller** (MVC) architecture. You use **JSX syntax** to define your UI elements in a declarative manner. Then, you just write pure **Object Oriented** JS code for your models/states and controllers. No new framework syntax to learn. No virtual DOM or hooks to a global blackbox state machine, just simplicity and speed. You define and control your data model and state with your own model classes. WebMVC.js also provides minimum scaffolding to allow **File-Based Routing** and **Dynamic Loading** for performance. Don't over-engineer. This is Web programming the way it should have been!
 
 ## ✨ Features
 
@@ -8,8 +8,8 @@ A modern JavaScript library for building **Single-Page Applications** (SPA) with
 - 🧠 **Model-driven state management** (Observer-style and Proxy based)
 - ⚡ **JSX support** (via a lightweight `h()` function). support both class and className attributes for easy migrations.
 - 🔁 **Automatic re-render on model changes**. The default behavior is re-rendering the whole component with a quick merge algorithm to minimize UI updates. This should be efficient for the vast majority of use cases. You may override it with your own update() function if you want more control on your component re-rendering. You have direct access to any DOM element with a "ref" attribute.
-- 🧼 **Minimal runtime**, no dependencies
-- 👉 **File-Based routing** to encourage neat project organization. Automatic route discovery - a file directory is mapped to a route if it contains a page.jsx file with a default export. Dynamic import so that a chunk for a directory is loaded only when the corresponding route is accessed. Also support preload if needed.
+- 🧼 **Minimal runtime**, no runtime dependencies
+- 👉 **File-Based routing** to encourage neat project organization. Automatic route discovery - a file directory is mapped to a route if it contains a page.jsx file with a default export. We use dynamic import so that a chunk for a directory is loaded only when the corresponding route is accessed. Also support preload if needed.
 - 🛠 Built with **Vite**, it's the JSX transformer through a lightweight `h()` and live server.
 
 ## 🚀 Getting Started
@@ -19,14 +19,7 @@ A modern JavaScript library for building **Single-Page Applications** (SPA) with
 ```bash
 git clone https://github.com/congjuny/WebMVC.js.git
 
-## for framework development - link framework locally
-cd WebMVC.js/framework
-npm link
-
 cd WebMVC.js/examples/example1-counter
-
-## install local framework for your project
-npm link web-mvc-js
 
 npm install
 npm run dev
@@ -34,4 +27,4 @@ npm run dev
 
 ## ✨ Contributions
 
-How to help? Come out with examples that challenge the framework. We will make it harder and harder to do so 😃.
+How to help? Come out with examples that challenge the library. We will make it harder and harder to do so 😃.
