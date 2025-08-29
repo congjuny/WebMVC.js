@@ -2,6 +2,7 @@
 // framework/src/router.js
 import { WebMVCComponent } from "./component";
 import { getLogger } from "./logger.js";
+import { h } from "./h.js";
 
 const log = getLogger();
 
@@ -12,8 +13,8 @@ export class WebMVCRouter extends WebMVCComponent {
     this.currentPath = window.location.pathname;
     this.currentComponent = null;
 
-    this.element = document.createElement("div");
-    this.element.id = "router";
+    //this.element = document.createElement("div");
+    //this.element.id = "router";
 
     this.callbacks = {
       onBeforeRoute: null,
@@ -176,6 +177,6 @@ export class WebMVCRouter extends WebMVCComponent {
   }
 
   render() {
-    return this.element;
+    return h("div", null);
   }
 }
