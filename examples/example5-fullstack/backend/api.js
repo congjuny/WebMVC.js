@@ -66,12 +66,13 @@ router.post("/employees", async (req, res) => {
   }
 });
 
-router.put("/employees/:id", async (req, res) => {
-  const { id } = req.params;
-  const { name, email, position, salary } = req.body;
+router.put("/employees", async (req, res) => {
+  console.log("PUT /employees body:", req.body);
 
-  if (!name || !email) {
-    return res.status(400).json({ error: "Name and email are required" });
+  const { id, name, email, position, salary } = req.body;
+
+  if (!id || !name || !email) {
+    return res.status(400).json({ error: "ID, name and email are required" });
   }
 
   try {

@@ -13,3 +13,4 @@ export * from "./model.js";
 export * from "./h.js";
 export * from "./router.js";
 export * from "./logger.js";
+export * from "./utils.js";

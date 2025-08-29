@@ -32,7 +32,8 @@ export class App extends WebMVCComponent {
   };
 
   updateEmployee = (data) => {
-    return fetch(`/api/employees/${data.id}`, {
+    console.log("Updating employee with data:", JSON.stringify(data));
+    return fetch("/api/employees", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
