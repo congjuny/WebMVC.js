@@ -1,5 +1,11 @@
-// Copyright (c) 2025 Congjun Yang
-// framework/src/model.js
+/*!
+ * Copyright (c) 2025 Congjun Yang
+ * License: MIT
+ *
+ * WebMVC.js/src/model.js
+ *
+ * The WebMVCModel class provides a reactive data model for components
+ */
 
 export class WebMVCModel {
   constructor(data = {}) {

@@ -1,5 +1,11 @@
-// Copyright (c) 2025 Congjun Yang
-// framework/component.js
+/*!
+ * Copyright (c) 2025 Congjun Yang
+ * License: MIT
+ *
+ * WebMVC.js/component.js
+ *
+ * WebMVC.js component system
+ */
 
 import { Fragment } from "./h.js";
 import { getLogger, LogLevel } from "./logger.js";
@@ -156,7 +162,7 @@ function createElement(vnode, ownerComponent, parentElement = null) {
         instance.parentComponent.childComponents[props.id] = instance;
       }
     }
-    if (instance.constructor.name === "WebMVCRouter" && instance.parentComponent) {
+    if (instance.className === "WebMVCRouter" && instance.parentComponent) {
       instance.parentComponent.router = instance;
     }
 

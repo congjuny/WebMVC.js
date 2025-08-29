@@ -1,4 +1,12 @@
-// logger.js
+/*!
+ * Copyright (c) 2025 Congjun Yang
+ * License: MIT
+ *
+ * WebMVC.js/src/logger.js
+ *
+ * A logging utility that allows you to set logging levels
+ */
+
 export const LogLevel = {
   DEBUG: 0,
   INFO: 1,

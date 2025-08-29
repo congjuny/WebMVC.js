@@ -1,5 +1,6 @@
 // Copyright (c) 2025 Congjun Yang
-// framework/src/router.js
+//
+// WebMVC.js/src/router.js
 import { WebMVCComponent } from "./component";
 import { getLogger } from "./logger.js";
 import { h } from "./h.js";
@@ -13,8 +14,8 @@ export class WebMVCRouter extends WebMVCComponent {
     this.currentPath = window.location.pathname;
     this.currentComponent = null;
 
-    //this.element = document.createElement("div");
-    //this.element.id = "router";
+    // to survive minification
+    this.className = "WebMVCRouter";
 
     this.callbacks = {
       onBeforeRoute: null,

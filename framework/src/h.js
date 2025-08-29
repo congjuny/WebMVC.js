@@ -1,9 +1,11 @@
-// Copyright (c) 2025 Congjun Yang
-// framework/src/h.js
+/*!
+ * Copyright (c) 2025 Congjun Yang
+ * License: MIT
+ *
+ * WebMVC.js/src/h.js
+ */
 
 export function h(tag, props, ...children) {
-  //console.log("h() called with tag:", tag, "props:", props, "children:", children);
-
   return { tag, props: props || {}, children };
 }
 

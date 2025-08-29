@@ -1,20 +1,36 @@
 {
   "name": "web-mvc-js",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A package for the Web MVC framework",
-  "main": "src/jsx-runtime.js",
+  "main": "dist/wmvc-runtime.js",
+  "module": "dist/wmvc-runtime.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/wmvc-runtime.js",
+      "require": "./dist/wmvc-runtime.js"
+    }
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "javascript",
-    "classes",
-    "utility"
+    "MVC",
+    "SPA",
+    "framework"
   ],
   "author": "Congjun Yang",
   "license": "MIT",
   "files": [
-    "src/"
-  ]
+    "dist"
+  ],
+  "devDependencies": {
+    "rollup": "4.49.0",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2"
+  }
 }
