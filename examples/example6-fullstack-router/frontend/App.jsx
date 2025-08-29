@@ -1,5 +1,4 @@
 import Navbar from "./components/Navbar.jsx";
-import HomePage from "./pages/page.jsx";
 //import { ErrorComponent } from "./components/ErrorComponent.jsx";
 //import { WebMVCRouter } from "../../../framework/src/router.js";
 
@@ -9,7 +8,7 @@ export default class App extends WebMVCComponent {
 
     this.state = new WebMVCModel();
 
-    this.state.currentRoute = new HomePage();
+    this.state.currentRoute = this;
     this.state.isLoading = false;
 
     //this.setupRouterCallbacks();
