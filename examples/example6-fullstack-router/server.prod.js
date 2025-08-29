@@ -5,13 +5,21 @@ import { fileURLToPath } from "url";
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+console.log("Serving production build from 'dist' directory, dir:", __dirname);
+
 // API
 app.use("/api", (await import("./backend/api.js")).default);
 
+console.log("API routes registered");
+
 // Serve frontend
 app.use(express.static(path.join(__dirname, "dist")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "dist/index.html"));
+
+app.get((req, res) => {
+  const indexPath = path.join(__dirname, "frontend/index.html");
+  console.log("Serving frontend index.html, path:", indexPath);
+
+  res.sendFile(indexPath);
 });
 
 const port = process.env.PORT || 3000;
