@@ -10,6 +10,10 @@
     "clean": "rm -rf dist"
   },
 
+  "dependencies": {
+    "web-mvc-js": "*"
+  },
+
   "devDependencies": {
     "vite": "^7.1.3"
   }
