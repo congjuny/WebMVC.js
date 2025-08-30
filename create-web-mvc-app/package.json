@@ -1,6 +1,6 @@
 {
   "name": "create-web-mvc-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scaffold WebMVC.js applications with Vite",
   "main": "index.js",
   "type": "module",
