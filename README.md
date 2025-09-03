@@ -14,7 +14,7 @@ A modern and lightweight JavaScript library for building **Single-Page Applicati
 
 ## 🚀 Getting Started
 
-### 1. Clone this repo and take a look at one of the examples
+### Clone this repo and take a look at one of the examples
 
 ```bash
 git clone https://github.com/congjuny/WebMVC.js.git
@@ -25,14 +25,20 @@ npm install
 npm run dev
 ```
 
-### 2. Clone this repo and take a look at one of the examples
+### Or create your own app
 
 ```bash
 npm install -g create-web-mvc-app
-create-web-mvc-app MyApp --full --install
+npx create-web-mvc-app MyApp --full --install
 cd MyApp
 npm run dev
 
+```
+
+#### For usage of create-web-mvc-app
+
+```bash
+npx create-web-mvc-app --help
 ```
 
 ## ✨ Contributions
