@@ -2,10 +2,11 @@
 //
 // WebMVC.js/src/router.js
 import { WebMVCComponent } from "./component";
-import { getLogger } from "./logger.js";
+import { getLogger, LogLevel } from "./logger.js";
 import { h } from "./h.js";
 
 const log = getLogger();
+log.setLogLevel(LogLevel.DEBUG);
 
 export class WebMVCRouter extends WebMVCComponent {
   constructor() {
@@ -63,10 +64,21 @@ export class WebMVCRouter extends WebMVCComponent {
 
   // Support dynamic routes like /user/:id
   matchRoute(urlPath) {
+    const query = {};
+
+    const [urlPath0, queryString] = urlPath.split("?");
+    if (queryString) {
+      queryString.split("&").forEach((param) => {
+        const [key, value] = param.split("=");
+        query[decodeURIComponent(key)] = decodeURIComponent(value);
+      });
+    }
+
     for (const route of this.routes) {
       const params = {};
+
       const routeParts = route.path.split("/").filter(Boolean);
-      const urlParts = urlPath.split("/").filter(Boolean);
+      const urlParts = urlPath0.split("/").filter(Boolean);
 
       if (routeParts.length !== urlParts.length) {
         continue;
@@ -82,7 +94,7 @@ export class WebMVCRouter extends WebMVCComponent {
       });
 
       if (matched) {
-        return { route, params };
+        return { route, params, query };
       }
     }
 
@@ -151,7 +163,7 @@ export class WebMVCRouter extends WebMVCComponent {
 
       try {
         log.debug("Router.doNavigation() component class:", ComponentClass);
-        this.currentComponent = new ComponentClass(match.params);
+        this.currentComponent = new ComponentClass(match.params, match.query);
 
         await this.currentComponent.mount(this.element);
 

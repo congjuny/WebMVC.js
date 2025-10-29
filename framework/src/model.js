@@ -33,6 +33,8 @@ export class WebMVCModel {
       get(obj, prop) {
         const value = obj[prop];
 
+        /* No recursive, at least for now
+         ************************************************************************************
         // Return methods and internal properties as-is
         if (typeof value === "function" || typeof prop === "symbol" || prop.startsWith("_")) {
           return value;
@@ -43,11 +45,20 @@ export class WebMVCModel {
           const fullPath = path ? `${path}.${prop}` : prop;
 
           if (Array.isArray(value)) {
-            return obj._createArrayProxy(value, fullPath);
+            if (obj._createArrayProxy) {
+              return obj._createArrayProxy(value, fullPath);
+            } else {
+              return value;
+            }
           } else if (value.constructor === Object) {
-            return obj._createProxy(value, fullPath);
+            if (obj._createProxy) {
+              return obj._createProxy(value, fullPath);
+            } else {
+              return value;
+            }
           }
         }
+        */
 
         return value;
       },
@@ -118,6 +129,8 @@ export class WebMVCModel {
 
         const value = arr[prop];
 
+        /* No recursive, at least for now
+         ************************************************************************************
         // Wrap nested objects/arrays
         if (value && typeof value === "object") {
           const fullPath = `${path}[${prop}]`;
@@ -128,6 +141,7 @@ export class WebMVCModel {
             return self._createProxy(value, fullPath);
           }
         }
+        */
 
         return value;
       },

@@ -155,7 +155,9 @@ function createElement(vnode, ownerComponent, parentElement = null) {
       instance.componentId = props.id;
       if (instance.parentComponent) {
         if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
-          log.warn(`Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`);
+          log.warn(
+            `Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`
+          );
         }
 
         // store this child component in the parent component
@@ -206,7 +208,7 @@ function createElement(vnode, ownerComponent, parentElement = null) {
         if (typeof value === "object") {
           // Handle object values (e.g., style) using {{}} syntax
           const str = Object.entries(value)
-            .map(([k, v]) => `${k}: ${v}`)
+            .map(([k, v]) => `${camelToKebab(k)}: ${v}`)
             .join("; ");
           el.setAttribute(key, str);
         } else {
@@ -439,7 +441,10 @@ function removeRefsFromSubtree(element, component) {
     element.__ownerComponent.parentComponent === component
   ) {
     delete component.childComponents[element.__ownerComponent.componentId];
-    log.debug(`Removed child component ${element.__ownerComponent.componentId} `, `from component ${component.constructor.name}`);
+    log.debug(
+      `Removed child component ${element.__ownerComponent.componentId} `,
+      `from component ${component.constructor.name}`
+    );
   }
 
   for (let child of element.children || []) {
@@ -464,9 +469,14 @@ function addRefsFromSubtree(element, component) {
   if (element.__ownerComponent && element.__ownerComponent.parentComponent === component) {
     if (element.__ownerComponent.componentId) {
       component.childComponents[element.__ownerComponent.componentId] = element.__ownerComponent;
-      log.debug(`Added child component ${element.__ownerComponent.componentId} `, `to component ${component.constructor.name}`);
+      log.debug(
+        `Added child component ${element.__ownerComponent.componentId} `,
+        `to component ${component.constructor.name}`
+      );
     } else {
-      console.error(`componentId missing: ${element.__ownerComponent.constructor.name}`);
+      log.debug(
+        `Component ${element.__ownerComponent.constructor.name} has no componentId, not registered with parent`
+      );
     }
   }
 
@@ -504,4 +514,9 @@ function installEventHandlers(element) {
   for (const child of element.children) {
     installEventHandlers(child);
   }
+}
+
+// Convert camelCase to kebab-case, e.g. overflowY -> overflow-y
+function camelToKebab(str) {
+  return str.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
 }

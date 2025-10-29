@@ -17,6 +17,7 @@ dist-ssr
 
 /helper/
 /test/
+/examples/test*
 
 # Editor directories and files
 .vscode/*
