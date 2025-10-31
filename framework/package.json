@@ -1,6 +1,6 @@
 {
   "name": "web-mvc-js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A package for the Web MVC framework",
   "main": "dist/wmvc-runtime.js",
   "module": "dist/wmvc-runtime.js",

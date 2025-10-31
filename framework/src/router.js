@@ -64,19 +64,17 @@ export class WebMVCRouter extends WebMVCComponent {
 
   // Support dynamic routes like /user/:id
   matchRoute(urlPath) {
-    const query = {};
+    const params = {};
 
     const [urlPath0, queryString] = urlPath.split("?");
     if (queryString) {
       queryString.split("&").forEach((param) => {
         const [key, value] = param.split("=");
-        query[decodeURIComponent(key)] = decodeURIComponent(value);
+        params[decodeURIComponent(key)] = decodeURIComponent(value);
       });
     }
 
     for (const route of this.routes) {
-      const params = {};
-
       const routeParts = route.path.split("/").filter(Boolean);
       const urlParts = urlPath0.split("/").filter(Boolean);
 
@@ -94,7 +92,7 @@ export class WebMVCRouter extends WebMVCComponent {
       });
 
       if (matched) {
-        return { route, params, query };
+        return { route, params };
       }
     }
 
@@ -163,7 +161,7 @@ export class WebMVCRouter extends WebMVCComponent {
 
       try {
         log.debug("Router.doNavigation() component class:", ComponentClass);
-        this.currentComponent = new ComponentClass(match.params, match.query);
+        this.currentComponent = new ComponentClass(match.params);
 
         await this.currentComponent.mount(this.element);
 

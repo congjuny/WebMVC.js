@@ -11,7 +11,7 @@ import { Fragment } from "./h.js";
 import { getLogger, LogLevel } from "./logger.js";
 
 const log = getLogger();
-log.setLogLevel(LogLevel.DEBUG);
+log.setLogLevel(LogLevel.WARN);
 let creatingNewElement = false;
 
 export class WebMVCComponent {
@@ -215,7 +215,14 @@ function createElement(vnode, ownerComponent, parentElement = null) {
           if (key === "className") {
             el.setAttribute("class", value);
           } else {
-            el.setAttribute(key, value);
+            // Handle HTML5 boolean attributes
+            if (typeof value === "boolean" || value instanceof Boolean) {
+              if (value) {
+                el.setAttribute(key, "");
+              }
+            } else {
+              el.setAttribute(key, value);
+            }
           }
         }
       }
