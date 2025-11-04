@@ -75,13 +75,30 @@ export class WebMVCComponent {
     }
   }
 
-  unmount() {
+  resetChildRefs() {
+    this.childCount = 0;
     this.refs = {};
     this.childComponents = {};
+  }
+
+  unmount() {
+    this.resetChildRefs();
 
     if (this.element && this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
     }
+  }
+
+  addChildComponent(childComponent) {
+    if (!childComponent) {
+      return;
+    }
+
+    this.childCount += 1;
+
+    const childId = childComponent.componentId ?? "__child" + this.childCount;
+    log.debug("Added child component: ", childComponent, "To Parent Component:", this);
+    this.childComponents[childId] = childComponent;
   }
 
   // Update method called by the model listener
@@ -97,11 +114,9 @@ export class WebMVCComponent {
 
     const oldEl = this.element;
 
-    // complete replace or merge.
-    // const dom = this.createDom(this, this.parentElement);
-    // this.parentElement.replaceChild(dom, oldEl);
-
     const vdom = this.render(); // Virtual DOM node from JSX -> h() -> actual element
+
+    this.resetChildRefs();
     const dom2 = createElement(vdom, this, this.parentElement);
     mergeDOMElements(this, oldEl, dom2);
 
@@ -158,23 +173,15 @@ function createElement(vnode, ownerComponent, parentElement = null) {
     const instance = new tag({ ...props, children: children });
 
     instance.parentComponent = ownerComponent;
-    if (instance.parentComponent) {
-      instance.parentComponent.childCount += 1;
+    if (ownerComponent) {
       if (props.id) {
         instance.componentId = props.id;
-        if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
-          log.warn(
-            `Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`
-          );
+        if (creatingNewElement && ownerComponent.childComponents[props.id]) {
+          log.warn(`Component ID ${props.id} already exists in ${ownerComponent.constructor.name}, overwriting`);
         }
-
-        // store this child component in the parent component
-        instance.parentComponent.childComponents[props.id] = instance;
-      } else {
-        // record anonymous child
-        const childId = "__child" + instance.parentComponent.childCount;
-        instance.parentComponent.childComponents[childId] = instance;
       }
+
+      ownerComponent.addChildComponent(instance);
     }
 
     if (instance.className === "WebMVCRouter" && instance.parentComponent) {
@@ -290,7 +297,7 @@ function mergeDOMElements(ownerComponent, target, source) {
   }
 
   if (!canMergeNodes(target, source)) {
-    removeRefsFromSubtree(target, ownerComponent);
+    //removeRefsFromSubtree(target, ownerComponent);
     addRefsFromSubtree(source, ownerComponent);
     ownerComponent.parentElement.replaceChild(source, target);
   } else {
@@ -406,18 +413,22 @@ function mergeChildren(ownerComponent, target, source) {
         // Recursively merge element
         log.debug(`Merging ${ownerComponent.constructor.name} ${targetChild.tagName} element`);
         if (targetChild.__ownerComponent) {
-          // this child node is the root element of a child component of the current owner component
+          // this child DOM node is the root element of a child component of the current owner component
           // record this child component with the current owner
-          if (targetChild.__ownerComponent.componentId) {
-            ownerComponent.childComponents[targetChild.__ownerComponent.componentId] = targetChild.__ownerComponent;
+          if (targetChild.__ownerComponent.parentComponent === ownerComponent) {
+            ownerComponent.addChildComponent(targetChild.__ownerComponent);
+          } else {
+            log.error("Invalid parentComponent:", targetChild.__ownerComponent.parentComponent);
           }
+
+          targetChild.__ownerComponent.resetChildRefs();
           mergeDOMElements(targetChild.__ownerComponent, targetChild, sourceChild);
         } else {
           mergeDOMElements(ownerComponent, targetChild, sourceChild);
         }
       } else {
         // Replace target child with source child
-        removeRefsFromSubtree(targetChild, ownerComponent);
+        // removeRefsFromSubtree(targetChild, ownerComponent);
         addRefsFromSubtree(sourceChild, ownerComponent);
         target.replaceChild(sourceChild, targetChild);
         log.debug(
@@ -427,7 +438,7 @@ function mergeChildren(ownerComponent, target, source) {
       }
     } else {
       // Replace target child with source child
-      removeRefsFromSubtree(targetChild, ownerComponent);
+      //removeRefsFromSubtree(targetChild, ownerComponent);
       addRefsFromSubtree(sourceChild, ownerComponent);
       target.replaceChild(sourceChild, targetChild);
       log.debug(
@@ -444,7 +455,7 @@ function mergeChildren(ownerComponent, target, source) {
   while (targetIndex < targetChildren.length) {
     const childToRemove = targetChildren[targetIndex];
     if (childToRemove && childToRemove.parentNode === target) {
-      removeRefsFromSubtree(childToRemove, ownerComponent);
+      //removeRefsFromSubtree(childToRemove, ownerComponent);
       target.removeChild(childToRemove);
       log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
     }
@@ -497,36 +508,30 @@ function removeRefsFromSubtree(element, component) {
   }
 }
 
-function addRefsFromSubtree(element, component) {
-  if (!element || !component) {
+function addRefsFromSubtree(element, ownerComponent) {
+  if (!element || !ownerComponent) {
     return;
   }
 
   if (element.__ref) {
-    component.refs[element.__ref] = element;
-    log.debug(`Added ref ${element.__ref} to component ${component.constructor.name}`);
+    ownerComponent.refs[element.__ref] = element;
+    log.debug(`Added ref ${element.__ref} to ownerComponent ${ownerComponent.constructor.name}`);
   }
 
-  if (element.__ownerComponent && element.__ownerComponent.parentComponent === component) {
-    if (element.__ownerComponent.componentId) {
-      component.childComponents[element.__ownerComponent.componentId] = element.__ownerComponent;
-      log.debug(
-        `Added child component ${element.__ownerComponent.componentId} `,
-        `to component ${component.constructor.name}`
-      );
+  if (element.__ownerComponent) {
+    if (element.__ownerComponent.parentComponent === ownerComponent) {
+      ownerComponent.addChildComponent(element.__ownerComponent);
     } else {
-      log.debug(
-        `Component ${element.__ownerComponent.constructor.name} has no componentId, not registered with parent`
-      );
+      log.error("Invalid parentComponent:", element.__ownerComponent.parentComponent);
     }
   }
 
   for (let child of element.children || []) {
-    if (child.__ownerComponent && child.__ownerComponent !== component) {
+    if (child.__ownerComponent && child.__ownerComponent !== ownerComponent) {
       // child belongs to a descendent component, do not touch it
       continue;
     }
-    addRefsFromSubtree(child, component);
+    addRefsFromSubtree(child, ownerComponent);
   }
 }
 
@@ -551,6 +556,7 @@ function installListener(element, eventName, handler, context = null) {
   handlerMap.set(handler, wrappedHandler);
 }
 
+// not used - but keep it for now
 function removeListener(element, eventName, handler) {
   if (!element[ELEMENT_EVENT_MAP]) {
     return;
