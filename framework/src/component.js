@@ -24,6 +24,7 @@ export class WebMVCComponent {
     this.refs = {}; // references to child DOM elements
     this.element = null; // Track own root DOM element
     this.parentElement = null; // parent element
+    this.childCount = 0;
   }
 
   // Render method - to be overridden by subclasses
@@ -148,12 +149,19 @@ function createElement(vnode, ownerComponent, parentElement = null) {
   }
 
   if (typeof tag === "function") {
+    if (!(tag.prototype instanceof WebMVCComponent)) {
+      log.error(`createElement(): ${tag.name} not a WebMVCComponent`);
+      //throw new Error(`createElement(): ${tag.name} not a WebMVCComponent`);
+      return errorElement(`${tag.name} not a WebMVCComponent`);
+    }
+
     const instance = new tag({ ...props, children: children });
 
     instance.parentComponent = ownerComponent;
-    if (props.id) {
-      instance.componentId = props.id;
-      if (instance.parentComponent) {
+    if (instance.parentComponent) {
+      instance.parentComponent.childCount += 1;
+      if (props.id) {
+        instance.componentId = props.id;
         if (creatingNewElement && instance.parentComponent.childComponents[props.id]) {
           log.warn(
             `Component ID ${props.id} already exists in ${instance.parentComponent.constructor.name}, overwriting`
@@ -162,8 +170,13 @@ function createElement(vnode, ownerComponent, parentElement = null) {
 
         // store this child component in the parent component
         instance.parentComponent.childComponents[props.id] = instance;
+      } else {
+        // record anonymous child
+        const childId = "__child" + instance.parentComponent.childCount;
+        instance.parentComponent.childComponents[childId] = instance;
       }
     }
+
     if (instance.className === "WebMVCRouter" && instance.parentComponent) {
       instance.parentComponent.router = instance;
     }
@@ -203,7 +216,8 @@ function createElement(vnode, ownerComponent, parentElement = null) {
         }
       } else if (key.startsWith("on") && typeof value === "function") {
         const eventName = key.slice(2).toLowerCase();
-        el.addEventListener(eventName, value);
+
+        installListener(el, eventName, value, this);
       } else if (value !== null && value !== undefined) {
         if (typeof value === "object") {
           // Handle object values (e.g., style) using {{}} syntax
@@ -281,6 +295,7 @@ function mergeDOMElements(ownerComponent, target, source) {
     ownerComponent.parentElement.replaceChild(source, target);
   } else {
     mergeAttributes(ownerComponent, target, source);
+    mergeEventListeners(ownerComponent, target, source);
     mergeChildren(ownerComponent, target, source);
   }
 }
@@ -330,6 +345,25 @@ function mergeAttributes(ownerComponent, target, source) {
     if (!source.hasAttribute(attr.name)) {
       log.debug(`Removed attribute: ${attr.name}`);
       target.removeAttribute(attr.name);
+    }
+  }
+}
+
+function mergeEventListeners(component, target, source) {
+  if (!target || !source) {
+    return;
+  }
+
+  removeAllListeners(target);
+
+  const eventsMap = source[ELEMENT_EVENT_MAP];
+  if (!eventsMap) {
+    return;
+  }
+
+  for (const [eventName, handlerMap] of eventsMap.entries()) {
+    for (const [origHandler] of handlerMap.entries()) {
+      installListener(target, eventName, origHandler, component);
     }
   }
 }
@@ -496,34 +530,81 @@ function addRefsFromSubtree(element, component) {
   }
 }
 
-function installEventHandlers(element) {
-  const pairs = JSON.parse(element.dataset?.events || "[]");
-  pairs.forEach(([eventType, handlerName]) => {
-    //const handler = eval(handlerName);
-    log.debug(`Installing event handler for ${eventType} on ${element}:`, handlerName);
+const ELEMENT_EVENT_MAP = Symbol("__eventsMap");
 
-    let handler = new Function(`return ${handlerName}`)();
+function installListener(element, eventName, handler, context = null) {
+  if (!element[ELEMENT_EVENT_MAP]) {
+    element[ELEMENT_EVENT_MAP] = new Map();
+  }
 
-    if (typeof handler === "function") {
-      element.addEventListener(eventType, handler);
-      log.debug(`Installed event handler for ${eventType} on ${element}:`, handlerName);
-    } else {
-      log.warn(`Handler ${handlerName} not found on ${element}:`, handlerName);
-    }
-  });
+  if (!element[ELEMENT_EVENT_MAP].has(eventName)) {
+    element[ELEMENT_EVENT_MAP].set(eventName, new Map());
+  }
 
-  if (!element.children) {
-    // No children to install handlers for
+  const handlerMap = element[ELEMENT_EVENT_MAP].get(eventName);
+  if (handlerMap.has(handler)) {
     return;
   }
 
-  // recursively install handlers for child elements
-  for (const child of element.children) {
-    installEventHandlers(child);
+  const wrappedHandler = (...args) => handler.call(context ?? this, ...args);
+  element.addEventListener(eventName, wrappedHandler);
+  handlerMap.set(handler, wrappedHandler);
+}
+
+function removeListener(element, eventName, handler) {
+  if (!element[ELEMENT_EVENT_MAP]) {
+    return;
   }
+
+  const handlerMap = element[ELEMENT_EVENT_MAP].get(eventName);
+  if (!handlerMap) {
+    return;
+  }
+
+  const wrappedHandler = handlerMap.get(handler);
+  if (!wrappedHandler) {
+    return;
+  }
+
+  element.removeEventListener(eventName, wrappedHandler);
+  handlerMap.delete(handler);
+
+  if (handlerMap.size === 0) {
+    element[ELEMENT_EVENT_MAP].delete(eventName);
+  }
+  if (element[ELEMENT_EVENT_MAP].size === 0) {
+    delete element[ELEMENT_EVENT_MAP];
+  }
+}
+
+// remove all listeners (added with installListener()) for a DOM element
+function removeAllListeners(element) {
+  if (!element[ELEMENT_EVENT_MAP]) {
+    return;
+  }
+
+  // Iterate over all events
+  for (const [eventName, handlerMap] of element[ELEMENT_EVENT_MAP].entries()) {
+    // Remove all wrapped handlers for this event
+    for (const wrapped of handlerMap.values()) {
+      element.removeEventListener(eventName, wrapped);
+    }
+    handlerMap.clear();
+  }
+
+  // Clear the events map and remove the symbol from the element
+  element[ELEMENT_EVENT_MAP].clear();
+  delete element[ELEMENT_EVENT_MAP];
 }
 
 // Convert camelCase to kebab-case, e.g. overflowY -> overflow-y
 function camelToKebab(str) {
   return str.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+}
+
+function errorElement(message) {
+  const el = document.createElement("div");
+  el.style.color = "red";
+  el.textContent = `ERROR: ${message}`;
+  return el;
 }

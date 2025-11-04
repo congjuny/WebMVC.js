@@ -161,6 +161,10 @@ export class WebMVCRouter extends WebMVCComponent {
 
       try {
         log.debug("Router.doNavigation() component class:", ComponentClass);
+        if (!(ComponentClass.prototype instanceof WebMVCComponent)) {
+          log.error(`${ComponentClass.name} is not a WebMVCComponent`);
+        }
+
         this.currentComponent = new ComponentClass(match.params);
 
         await this.currentComponent.mount(this.element);
@@ -169,6 +173,7 @@ export class WebMVCRouter extends WebMVCComponent {
           this.callbacks.onRouteComplete(path, params);
         }
       } catch (error) {
+        log.error("Error doNavigate():", error);
         if (this.callbacks.onRouteError) {
           this.callbacks.onRouteError(path, params, error);
         }
