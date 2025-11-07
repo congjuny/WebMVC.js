@@ -1,4 +1,4 @@
-import { WebMVCComponent, WebMVCCollection } from "web-mvc-js";
+import { WebMVCComponent, WebMVCModel } from "web-mvc-js";
 import { EmployeeListView } from "./EmployeeListView";
 import { EmployeeForm } from "./EmployeeForm";
 import { EmployeeModel } from "./EmployeeModel";
@@ -6,9 +6,14 @@ import { EmployeeModel } from "./EmployeeModel";
 export class App extends WebMVCComponent {
   constructor() {
     super();
-    this.employeeList = new WebMVCCollection(EmployeeModel, []);
+
+    this.state = new WebMVCModel({
+      employeeList: [],
+    });
 
     this.loadSampleData();
+
+    this.state.addListener((changes, model) => this.update(changes, model));
   }
 
   loadSampleData = () => {
@@ -20,19 +25,23 @@ export class App extends WebMVCComponent {
 
     sampleEmployees.forEach((employee) => {
       employee.id = this.getNewEmployeeId(); // Assign a new ID
-      this.employeeList.add(employee);
+      this.state.employeeList.push(employee);
     });
 
-    console.log("After loading sample data, employeeList =", this.employeeList);
+    console.log("After loading sample data, employeeList =", this.state.employeeList);
   };
 
   getNewEmployeeId() {
-    return this.employeeList.length > 0 ? Math.max(...this.employeeList.map((emp) => emp.id)) + 1 : 1;
+    return this.state.employeeList.length > 0 ? Math.max(...this.state.employeeList.map((emp) => emp.id)) + 1 : 1;
+  }
+
+  findById(id) {
+    return this.state.employeeList.find((emp) => emp.id === id);
   }
 
   onStartEdit = (id) => {
-    const employee = this.employeeList.findById(id);
-    this.childComponents["employeeForm"].setEmployee(employee.toPlainObject());
+    const employee = this.findById(id);
+    this.childComponents["employeeForm"].setEmployee(employee);
   };
 
   onCancel = () => {
@@ -40,40 +49,50 @@ export class App extends WebMVCComponent {
   };
 
   onDelete = (id) => {
-    const employee = this.employeeList.findById(id);
-    if (employee) {
-      this.employeeList.remove(employee);
-    }
+    this.state.employeeList = this.state.employeeList.filter((emp) => emp.id !== id);
+    console.log("employeeList (deleted ID: %d): %O", id, this.state.employeeList);
   };
 
   onAddOrEdit = (mode, employee) => {
     if (employee.validate()) {
       if (mode === "edit") {
         console.log("Employee with updates:", employee);
-        const curremp = this.employeeList.findById(employee.id);
+        const curremp = this.findById(employee.id);
         if (curremp) {
           Object.assign(curremp, employee);
         }
-        console.log("After update, employeeList =", this.employeeList);
+        console.log("After update, employeeList =", this.state.employeeList);
       } else {
         const newemp = new EmployeeModel(employee.toPlainObject());
         newemp.id = this.getNewEmployeeId();
         console.log("Adding new employee:", newemp);
-        this.employeeList.add(newemp);
+        this.state.employeeList.push(newemp);
       }
       this.childComponents["employeeForm"].setEmployee(null);
+      this.update();
     } else {
       alert("Please fill in all fields correctly.");
     }
   };
 
+  update(changes, model) {
+    console.log("App.update() called, changes =", changes, "model =", model);
+
+    super.update(changes, model);
+  }
+
   render() {
     console.log("App render() called");
     return (
       <div class="container">
-        <h1>Employee Management System</h1>
+        <h1>Example - Employee Management System</h1>
         <EmployeeForm id="employeeForm" onAddOrEdit={this.onAddOrEdit} onCancel={this.onCancel} />
-        <EmployeeListView id="employeeListView" model={this.employeeList} onEdit={this.onStartEdit} onDelete={this.onDelete} />
+        <EmployeeListView
+          id="employeeListView"
+          model={this.state.employeeList}
+          onEdit={this.onStartEdit}
+          onDelete={this.onDelete}
+        />
       </div>
     );
   }

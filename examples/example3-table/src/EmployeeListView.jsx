@@ -1,9 +1,9 @@
-import { WebMVCComponent } from "web-mvc-js";
+import { WebMVCModel, WebMVCComponent } from "web-mvc-js";
 
 export class EmployeeListView extends WebMVCComponent {
   constructor(props) {
     super(props); // Call the parent constructor
-    this.model = props?.model;
+    this.model = new WebMVCModel({ employeeList: props?.model });
     this.onEdit = props?.onEdit;
     this.onDelete = props?.onDelete;
     console.log("EmployeeListView created", this);
@@ -21,8 +21,8 @@ export class EmployeeListView extends WebMVCComponent {
   }
 
   render() {
-    console.log("EmployeeListView.render() with employees =", this.model);
-    this.model?.items?.map((employee) => {
+    console.log("EmployeeListView.render() with employees =", this.model.employeeList);
+    this.model.employeeList.map((employee) => {
       console.log("EmployeeListView.render() employee =", employee);
     });
 
@@ -41,8 +41,8 @@ export class EmployeeListView extends WebMVCComponent {
             </tr>
           </thead>
           <tbody id="employeeTableBody">
-            {this.model?.items?.length > 0 ? (
-              this.model.items.map((employee) => (
+            {this.model.employeeList.length > 0 ? (
+              this.model.employeeList.map((employee) => (
                 <tr key={employee.id}>
                   <td>{employee.id}</td>
                   <td>{employee.name}</td>
