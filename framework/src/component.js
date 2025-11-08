@@ -11,8 +11,13 @@ import { Fragment } from "./h.js";
 import { getLogger, LogLevel } from "./logger.js";
 
 const log = getLogger();
-log.setLogLevel(LogLevel.DEBUG);
+log.setLogLevel(LogLevel.WARN);
 let creatingNewElement = false;
+
+export function SetComponentLogLevel(log_level) {
+  console.log("setting log level to: ", log_level);
+  log.setLogLevel(log_level);
+}
 
 export class WebMVCComponent {
   constructor(props = {}) {

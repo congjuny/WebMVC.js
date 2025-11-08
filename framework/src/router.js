@@ -6,7 +6,12 @@ import { getLogger, LogLevel } from "./logger.js";
 import { h } from "./h.js";
 
 const log = getLogger();
-log.setLogLevel(LogLevel.DEBUG);
+log.setLogLevel(LogLevel.WARN);
+
+export function SetRouterLogLevel(log_level) {
+  console.log("setting log level to: ", log_level);
+  log.setLogLevel(log_level);
+}
 
 export class WebMVCRouter extends WebMVCComponent {
   constructor() {
