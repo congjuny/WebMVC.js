@@ -1,3 +1,5 @@
+// set log level for library
+import { LogLevel, SetComponentLogLevel } from "web-mvc-js";
 import { WebMVCComponent, WebMVCModel } from "web-mvc-js";
 import { EmployeeListView } from "./EmployeeListView";
 import { EmployeeForm } from "./EmployeeForm";
@@ -14,6 +16,8 @@ export class App extends WebMVCComponent {
     this.loadSampleData();
 
     this.state.addListener((changes, model) => this.update(changes, model));
+
+    SetComponentLogLevel(import.meta.env.VITE_PUBLIC_LOG_LEVEL);
   }
 
   loadSampleData = () => {
