@@ -54,6 +54,7 @@ export class App extends WebMVCComponent {
   };
 
   onAddOrEdit = (mode, employee) => {
+    console.log("App.onAddOrEdit() mode=", mode);
     if (employee.validate()) {
       if (mode === "edit") {
         console.log("Employee with updates:", employee);
@@ -63,7 +64,7 @@ export class App extends WebMVCComponent {
         }
         console.log("After update, employeeList =", this.state.employeeList);
       } else {
-        const newemp = new EmployeeModel(employee.toPlainObject());
+        const newemp = new EmployeeModel(employee);
         newemp.id = this.getNewEmployeeId();
         console.log("Adding new employee:", newemp);
         this.state.employeeList.push(newemp);
