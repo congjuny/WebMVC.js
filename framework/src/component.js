@@ -11,7 +11,7 @@ import { Fragment } from "./h.js";
 import { getLogger, LogLevel } from "./logger.js";
 
 const log = getLogger();
-log.setLogLevel(LogLevel.WARN);
+log.setLogLevel(LogLevel.DEBUG);
 let creatingNewElement = false;
 
 export class WebMVCComponent {
@@ -325,7 +325,7 @@ function mergeAttributes(ownerComponent, target, source) {
     const value = source[attr.name];
 
     if (target.getAttribute(attr.name) !== attr.value) {
-      log.debug(`Updated attribute: ${attr.name} = "${attr.value}"`);
+      log.debug(`${target.nodeName} Updated attribute: ${attr.name} = "${attr.value}"`);
       target.setAttribute(attr.name, attr.value);
 
       // TO DO: this is very rough - need to handle properties and attributes carefully
@@ -350,9 +350,57 @@ function mergeAttributes(ownerComponent, target, source) {
   // Remove attributes that don't exist in source (except id and class for demo)
   for (let attr of [...target.attributes]) {
     if (!source.hasAttribute(attr.name)) {
-      log.debug(`Removed attribute: ${attr.name}`);
+      log.debug(`${target.nodeName} Removed attribute: ${attr.name}`);
       target.removeAttribute(attr.name);
     }
+  }
+
+  // Copy relevant properties based on element type
+  const tag = source.tagName.toLowerCase();
+
+  switch (tag) {
+    case "input":
+      target.value = source.value;
+      target.checked = source.checked;
+      target.disabled = source.disabled;
+      target.readOnly = source.readOnly;
+
+      const input_type = target.type;
+      if (target.type === source.type) {
+        target.type = "text";
+        source.type = "text";
+
+        target.selectionStart = source.selectionStart;
+        target.selectionEnd = source.selectionEnd;
+
+        target.type = input_type;
+        source.type = input_type;
+      }
+      break;
+
+    case "textarea":
+      target.value = source.value;
+      target.disabled = source.disabled;
+      target.readOnly = source.readOnly;
+      break;
+
+    case "select":
+      target.selectedIndex = source.selectedIndex;
+      target.disabled = source.disabled;
+      break;
+
+    case "option":
+      target.selected = source.selected;
+      break;
+
+    case "img":
+      target.src = source.src;
+      target.alt = source.alt;
+      break;
+
+    default:
+      log.debug(`${tag} no property merged`);
+      break;
   }
 }
 
@@ -457,7 +505,7 @@ function mergeChildren(ownerComponent, target, source) {
     if (childToRemove && childToRemove.parentNode === target) {
       //removeRefsFromSubtree(childToRemove, ownerComponent);
       target.removeChild(childToRemove);
-      log.debug(`Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
+      log.debug(`${target.nodeName} Removed ${childToRemove.nodeType === 1 ? childToRemove.tagName : "text"} node`);
     }
     targetIndex++;
   }
