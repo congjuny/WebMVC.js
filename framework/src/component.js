@@ -38,17 +38,22 @@ export class WebMVCComponent {
   }
 
   createDom(argOwnerComponent, argParentElement) {
-    const vdom = this.render(); // Virtual DOM node from JSX -> h()
-    log.debug("createDom() vdom:", this, vdom);
+    try {
+      const vdom = this.render(); // Virtual DOM node from JSX -> h()
+      log.debug("createDom() vdom:", this, vdom);
 
-    const dom = createElement(vdom, argOwnerComponent, argParentElement);
+      const dom = createElement(vdom, argOwnerComponent, argParentElement);
 
-    this.element = dom; // Track own root DOM element
-    this.parentElement = argParentElement;
+      this.element = dom; // Track own root DOM element
+      this.parentElement = argParentElement;
 
-    //log.debug('createDom() innerHTML:', dom.innerHTML);
+      //log.debug('createDom() innerHTML:', dom.innerHTML);
 
-    return dom;
+      return dom;
+    } catch (error) {
+      log.error("Error createDom():", error);
+      return null;
+    }
   }
 
   mount(container) {
@@ -240,6 +245,8 @@ function createElement(vnode, ownerComponent, parentElement = null) {
         } else {
           if (key === "className") {
             el.setAttribute("class", value);
+          } else if (key === "htmlFor") {
+            el.setAttribute("for", value);
           } else {
             // Handle HTML5 boolean attributes
             if (typeof value === "boolean" || value instanceof Boolean) {
